@@ -1,0 +1,165 @@
+nameOverride: ""
+fullnameOverride: ""
+# -- (dict) Custom deployment annotations
+# @section -- Custom deployment values
+annotations: {}
+# -- (dict) Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations.
+# @section -- Custom deployment values
+podTemplateAnnotations: {}
+# -- (dict) Deployment labels
+# @section -- Custom deployment values
+labels: {}
+# -- (dict) Deployment strategy
+# @section -- Custom deployment values
+strategy: {}
+# -- (dict) Deployment nodeSelector
+# @section -- Custom deployment values
+nodeSelector: {}
+# -- (dict) Deployment tolerations
+# @section -- Custom deployment values
+tolerations: []
+# -- (dict) Deployment affinity rules
+# @section -- Custom deployment values
+affinity: {}
+# -- (dict) Deployment security context
+# @section -- Custom deployment values
+securityContext: {}
+# dnsPolicy: "None" # Optional dnsPolicy and dnsConfig to put into the Deployment's PodTemplateSpec.
+# dnsConfig:
+#   nameservers:
+#     - 1.1.1.1
+# containerSecurityContext: # Optional, plugged in into the both the deployment's main app container and the sidecar.
+#   allowPrivilegeEscalation: false
+
+
+# @section -- Lenses HQ deployment service values
+service:
+  # -- (bool) Deciding factor whether Lenses HQ service will be created and which type
+  # @section -- Lenses HQ deployment service values
+  enabled: true
+
+  # -- (string) Type of service to be created.
+  # @section -- Lenses HQ deployment service values
+  type: ClusterIP
+
+  # -- (dict) Additional service annotations
+  # @section -- Lenses HQ deployment service values
+  annotations: {}
+
+
+# -- User to be used by Lenses to deploy apps
+# @section -- Permission scope values
+serviceAccount:
+  # -- (bool) In case "true" new SA will be created with service.name as a SA name.
+  # @section -- Permission scope values
+  create: false
+
+  # -- (string) Name of Service Account. In case serviceAccount.create is *false*, existing SA with defined name here will be used.
+  # @section -- Permission scope values
+  name: default
+
+  # -- (dict) Additional service account annotations.
+  # @section -- Permission scope values
+  annotations: {}
+
+
+deployment:
+  replicas: 1
+  #  Resource management
+  # -- Pod resources
+  # @section -- Custom deployment values
+  resources:
+    requests:
+    #   cpu: 1
+      memory: 2Gi
+    limits:
+    #   cpu: 2
+      memory: 4Gi
+
+image:
+  repository: lensting/k2k
+  tag: v0.0.2-alpha
+
+# -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
+# Use it in conjuction with lenses.additionalVolumes
+# @section -- Extras
+additionalVolumeMounts:
+  # - name: lenses-plugins
+  #   mountPath: "/data/plugins"
+
+# -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
+# @section -- Extras
+additionalVolumes:
+  # Example usages:
+  #   Lenses: load additional plugins (UDFs) in Lenses
+  #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
+  # - name: secrets
+  #   secret:
+  #     secretName: lenses-super-secrets
+  # Note: PersistentVolumeClaim should already exist before deploying Helm chart
+  # - name: lenses-plugins
+  #   persistentVolumeClaim:
+  #     claimName: lenses-plugins
+
+k2k:
+  acceptEULA: true
+  monitoring:
+    port: 9090
+  otelConfig:
+    serviceName: "k2k"
+    metricsExporter: "prometheus"
+    tracesExporter: "none"
+    logsExporter: "none"
+    prometheusHost: ""
+    prometheusPort: "9090"
+  replicationConfig:
+    name: "simple_pipeline"
+    features:
+      exactlyOnce: disabled
+      headerReplication: disabled
+      schemaMapping: disabled
+      offsetCommitOptimizePartition: disabled
+      tracingHeaders: disabled
+    errorHandling:
+      onCommitSyncTimeout: fail
+      onControlMessageDeserializationError: fail
+    coordination:
+      kafka:
+        charset: "UTF-8"
+        consumer:
+        assignment:
+          topic: "__k2k-app-eot-assignment"
+          graceWindow: "15 seconds"
+          fencingMaxParallelism: 10
+        commit:
+          topic: "__k2k-app-eot-consumer-offsets"
+          syncTimeout: "60 seconds"
+          batchSize: 10000
+          batchTimeout: "30 seconds"
+          group: "k2k.eot"
+    source:
+      kafka:
+        registry:
+          url: "http://schema-registry-1:8081"
+        consumer:
+          group.id: "k2k.eot"
+        connection:
+          servers: "general-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
+    target:
+      kafka:
+        registry:
+          url: "http://schema-registry-2:8081"
+        producer:
+        connection:
+          servers: "general-dev-2-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
+    replication:
+      - source:
+          name: source
+          topic:
+            - "airline-customers"
+            - "airline-customers-name"
+      - sink:
+          name: sink-source-topic
+          topic:
+            prefix: "k2k.eot."
+          partition: source

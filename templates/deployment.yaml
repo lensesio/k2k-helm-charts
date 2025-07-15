@@ -1,0 +1,141 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{include "fullname" . | quote}}
+  labels:
+    app: {{include "fullname" . | quote}}
+    chart: {{printf "%s-%s" .Chart.Name .Chart.Version}}
+    release: {{.Release.Name}}
+    heritage: {{.Release.Service}}
+    component: "lenses-k2k"
+    lenses.io/app: {{include "fullname" .}}
+    lenses.io/app.type: lenses
+    {{- range $key, $value := .Values.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if .Values.annotations }}
+  annotations:
+    {{- range $key, $value := .Values.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: {{include "fullname" . | quote}}
+  strategy:
+    type: {{ default "Recreate" .Values.strategy.type | quote }}
+  template:
+    metadata:
+      labels:
+        app: {{include "fullname" . | quote}}
+        component: "lenses"
+        hostPort: {{ .Values.restPort | quote }}
+        containerPort: {{ .Values.restPort | quote }}
+        {{- range $key, $value := .Values.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+      annotations:
+        {{- with .Values.monitoring }}
+        {{- if .enabled }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .port }}"
+        prometheus.io/path: "/metrics"
+        {{- end }}
+        {{- end }}
+        {{- range $key, $value := .Values.podTemplateAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+      {{- if .Values.image.imagePullSecrets }}
+      imagePullSecrets: {{ .Values.image.imagePullSecrets | toYaml | nindent 8 }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations:
+        {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.securityContext }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      {{- end }}
+      {{- if .Values.dnsPolicy }}
+      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- end }}
+      {{- if .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ include "k2kApp" . | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+          {{- end }}
+          ports:
+          - containerPort: {{ .Values.k2k.monitoring.port }}
+          {{- if .Values.lensesAgent.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.k2k.monitoring.port }}
+            initialDelaySeconds: 300
+            periodSeconds: 10
+          {{- end }}
+          args:
+            - start
+            - -f
+            - /etc/config/config.yaml
+            - -t
+            {{- if .Values.k2k.acceptEULA }}
+            - --acceptEULA
+            {{- end }}
+            - name: OTEL_SERVICE_NAME
+              value: {{ .Values.k2k.otelConfig.serviceName | default "k2k" }}
+            - name: OTEL_METRICS_EXPORTER
+              value: {{ .Values.k2k.otelConfig.metricsExporter | default "prometheus" }}
+            - name: OTEL_TRACES_EXPORTER
+              value: {{ .Values.k2k.otelConfig.tracesExporter | default "none" }}
+            - name: OTEL_LOGS_EXPORTER
+              value: {{ .Values.k2k.otelConfig.logsExporter | default "none" }}
+            - name: OTEL_EXPORTER_PROMETHEUS_HOST
+              value: {{ .Values.k2k.otelConfig.prometheusHost | default "" }}
+            - name: OTEL_EXPORTER_PROMETHEUS_PORT
+              value: {{ .Values.k2k.otelConfig.prometheusPort | default "9090" }}
+          resources:
+            requests:
+              cpu: {{ .Values.deployment.resoureces.requests.cpu | default "500m" }}
+              memory: {{ .Values.deployment.resources.requests.memory | default "1Gi" }}
+            limits:
+              cpu: {{ .Values.deployment.resources.limits.cpu | default "1" }}
+              memory: {{ .Values.deployment.resources.limits.memory | default "2Gi" }}
+          volumeMounts:
+            - name: replication-config
+              mountPath: /etc/config
+            - name: config-volume
+              mountPath: /etc/config
+              readOnly: true
+            {{- if .Values.additionalVolumeMounts }}
+              {{- toYaml .Values.additionalVolumeMounts | nindent 10 }}
+            {{- end }}
+      volumes:
+        - name: replication-config
+          configMap:
+            name: {{ include "fullname" . | quote }}
+            items:
+              - key: config.yaml
+                path: config.yaml
+        {{- if .Values.additionalVolumes }}
+          {{- toYaml .Values.additionalVolumes | nindent 8 }}
+        {{- end }}
