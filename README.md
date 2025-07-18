@@ -81,36 +81,7 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 | k2k.otelConfig.prometheusPort | string | `"9090"` |  |
 | k2k.otelConfig.serviceName | string | `"k2k"` |  |
 | k2k.otelConfig.tracesExporter | string | `"none"` |  |
-| k2k.replicationConfig.coordination.kafka.assignment.fencingMaxParallelism | int | `10` |  |
-| k2k.replicationConfig.coordination.kafka.assignment.graceWindow | string | `"15 seconds"` |  |
-| k2k.replicationConfig.coordination.kafka.assignment.topic | string | `"__k2k-app-eot-assignment"` |  |
-| k2k.replicationConfig.coordination.kafka.charset | string | `"UTF-8"` |  |
-| k2k.replicationConfig.coordination.kafka.commit.batchSize | int | `10000` |  |
-| k2k.replicationConfig.coordination.kafka.commit.batchTimeout | string | `"30 seconds"` |  |
-| k2k.replicationConfig.coordination.kafka.commit.group | string | `"k2k.eot"` |  |
-| k2k.replicationConfig.coordination.kafka.commit.syncTimeout | string | `"60 seconds"` |  |
-| k2k.replicationConfig.coordination.kafka.commit.topic | string | `"__k2k-app-eot-consumer-offsets"` |  |
-| k2k.replicationConfig.coordination.kafka.consumer | string | `nil` |  |
-| k2k.replicationConfig.errorHandling.onCommitSyncTimeout | string | `"fail"` |  |
-| k2k.replicationConfig.errorHandling.onControlMessageDeserializationError | string | `"fail"` |  |
-| k2k.replicationConfig.features.exactlyOnce | string | `"disabled"` |  |
-| k2k.replicationConfig.features.headerReplication | string | `"disabled"` |  |
-| k2k.replicationConfig.features.offsetCommitOptimizePartition | string | `"disabled"` |  |
-| k2k.replicationConfig.features.schemaMapping | string | `"disabled"` |  |
-| k2k.replicationConfig.features.tracingHeaders | string | `"disabled"` |  |
-| k2k.replicationConfig.name | string | `"simple_pipeline"` |  |
-| k2k.replicationConfig.replication[0].sink.name | string | `"sink-source-topic"` |  |
-| k2k.replicationConfig.replication[0].sink.partition | string | `"source"` |  |
-| k2k.replicationConfig.replication[0].sink.topic.prefix | string | `"k2k.eot."` |  |
-| k2k.replicationConfig.replication[0].source.name | string | `"source"` |  |
-| k2k.replicationConfig.replication[0].source.topic[0] | string | `"airline-customers"` |  |
-| k2k.replicationConfig.replication[0].source.topic[1] | string | `"airline-customers-name"` |  |
-| k2k.replicationConfig.source.kafka.connection.servers | string | `"general-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"` |  |
-| k2k.replicationConfig.source.kafka.consumer."group.id" | string | `"k2k.eot"` |  |
-| k2k.replicationConfig.source.kafka.registry.url | string | `"http://schema-registry-1:8081"` |  |
-| k2k.replicationConfig.target.kafka.connection.servers | string | `"general-dev-2-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"` |  |
-| k2k.replicationConfig.target.kafka.producer | string | `nil` |  |
-| k2k.replicationConfig.target.kafka.registry.url | string | `"http://schema-registry-2:8081"` |  |
+| k2k.replicationConfig | object | `{}` |  |
 | nameOverride | string | `""` |  |
 
 ----------------------------------------------

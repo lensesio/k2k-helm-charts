@@ -124,57 +124,49 @@ k2k:
     logsExporter: "none"
     prometheusHost: ""
     prometheusPort: "9090"
-  replicationConfig:
-    name: "simple_pipeline"
-    features:
-      exactlyOnce: disabled
-      headerReplication: disabled
-      schemaMapping: disabled
-      offsetCommitOptimizePartition: disabled
-      tracingHeaders: disabled
-    errorHandling:
-      onCommitSyncTimeout: fail
-      onControlMessageDeserializationError: fail
-    coordination:
-      kafka:
-        charset: "UTF-8"
-        consumer:
-        assignment:
-          topic: "__k2k-app-eot-assignment"
-          graceWindow: "15 seconds"
-          fencingMaxParallelism: 10
-        commit:
-          topic: "__k2k-app-eot-consumer-offsets"
-          syncTimeout: "60 seconds"
-          batchSize: 10000
-          batchTimeout: "30 seconds"
-          group: "k2k.eot"
-    source:
-      kafka:
-        registry:
-          url: "http://schema-registry-1:8081"
-        consumer:
-          group.id: "k2k.eot"
-        connection:
-          servers: "general-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
-    target:
-      kafka:
-        registry:
-          url: "http://schema-registry-2:8081"
-        producer:
-        connection:
-          servers: "general-dev-2-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
-    replication:
-      - source:
-          name: source
-          topic:
-            - "airline-customers"
-            - "airline-customers-name"
-        sink:
-          name: sink-source-topic
-          topic:
-            prefix: "k2k.eot."
-          partition: source
+  replicationConfig: {}
+    # (object) Replication configuration for k2k. See documentation for structure.
+    # @section -- K2K replication config
+    # Example:
+    # name: "k2k-demo-env"
+    # features:
+    #   exactlyOnce: disabled
+    #   headerReplication: disabled
+    #   schemaMapping: disabled
+    #   offsetCommitOptimizePartition: enabled
+    #   tracingHeaders: disabled
+    #   autoCreateControlTopics: enabled
+    #   autoCreateTopics: enabled
+    # coordination:
+    #   kafka:
+    #     assignment:
+    #       topic: "__k2k-app-eot-assignment"
+    #     commit:
+    #       topic: "__k2k-app-eot-consumer-offsets"
+    #       group: "k2k.eot"
+    # source:
+    #   kafka:
+    #     consumer:
+    #       "group.id": "k2k.eot"
+    #     connection:
+    #       servers: "source-kafka:9092"
+    # target:
+    #   kafka:
+    #     producer:
+    #     connection:
+    #       servers: "target-kafka:9092"
+    # replication:
+    #   - source:
+    #       name: source
+    #       topic:
+    #         - "topic1"
+    #         - "topic2"
+    #   - sink:
+    #       name: sink-source-topic
+    #       topic:
+    #         prefix: "k2k.eot."
+    #       partition: source
+
 
   livenessProbe:
     # -- (string) Disables livenessProbe, used while debugging
