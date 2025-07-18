@@ -122,7 +122,7 @@ k2k:
     metricsExporter: "prometheus"
     tracesExporter: "none"
     logsExporter: "none"
-    prometheusHost: ""
+    prometheusHost: "0.0.0.0"
     prometheusPort: "9090"
   replicationConfig: {}
     # (object) Replication configuration for k2k. See documentation for structure.
