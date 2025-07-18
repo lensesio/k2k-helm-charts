@@ -1,8 +1,25 @@
 # lenses-k2k
 
-![Version: 0.0.2](https://img.shields.io/badge/Version-0.0.2-informational?style=flat-square) ![AppVersion: 0.0.2](https://img.shields.io/badge/AppVersion-0.0.2-informational?style=flat-square)
+![Version: 0.0.9](https://img.shields.io/badge/Version-0.0.9-informational?style=flat-square) ![AppVersion: 0.0.9](https://img.shields.io/badge/AppVersion-0.0.9-informational?style=flat-square)
 
 A Helm chart for Lenses K2K Replicator
+
+## Introduction
+
+Lenses Kafka2Kafka
+
+## Prerequisistes
+- Kubernetes 1.23+
+- Helm 3.8.0+
+
+```console
+
+helm install kafka2kafka .  --namespace lenses-k2k -f examples/k2k-with-plaintext.yaml
+```
+
+The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example configuration. The Parameters section lists the parameters (#parameters) that can be configured during installation.
+
+## Parameters
 
 ## Values
 
@@ -10,8 +27,9 @@ A Helm chart for Lenses K2K Replicator
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| additionalVolumeMounts | list | `nil` | Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses Use it in conjuction with lenses.additionalVolumes |
+| additionalVolumeMounts | list | `[]` | Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses Use it in conjuction with lenses.additionalVolumes |
 | additionalVolumes | list | `nil` | Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner. |
+| k2k.livenessProbe.enabled | string | `false` | Disables livenessProbe, used while debugging |
 
 ### Custom deployment values
 
@@ -20,6 +38,9 @@ A Helm chart for Lenses K2K Replicator
 | affinity | dict | `{}` | Deployment affinity rules |
 | annotations | dict | `{}` | Custom deployment annotations |
 | deployment.resources | object | `{"limits":{"memory":"4Gi"},"requests":{"memory":"2Gi"}}` | Pod resources |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"lensesio/lenses-agent"}` | Image map |
+| image.pullPolicy | string | `"IfNotPresent"` | Image pullPolicy |
+| image.repository | string | `"lensesio/lenses-agent"` | Image repository |
 | labels | dict | `{}` | Deployment labels |
 | nodeSelector | dict | `{}` | Deployment nodeSelector |
 | podTemplateAnnotations | dict | `{}` | Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations. |
@@ -50,8 +71,6 @@ A Helm chart for Lenses K2K Replicator
 |-----|------|---------|-------------|
 | deployment.replicas | int | `1` |  |
 | fullnameOverride | string | `""` |  |
-| image.repository | string | `"lensting/k2k"` |  |
-| image.tag | string | `"v0.0.2-alpha"` |  |
 | k2k.acceptEULA | bool | `true` |  |
 | k2k.monitoring.port | int | `9090` |  |
 | k2k.otelConfig.logsExporter | string | `"none"` |  |
@@ -78,12 +97,12 @@ A Helm chart for Lenses K2K Replicator
 | k2k.replicationConfig.features.schemaMapping | string | `"disabled"` |  |
 | k2k.replicationConfig.features.tracingHeaders | string | `"disabled"` |  |
 | k2k.replicationConfig.name | string | `"simple_pipeline"` |  |
+| k2k.replicationConfig.replication[0].sink.name | string | `"sink-source-topic"` |  |
+| k2k.replicationConfig.replication[0].sink.partition | string | `"source"` |  |
+| k2k.replicationConfig.replication[0].sink.topic.prefix | string | `"k2k.eot."` |  |
 | k2k.replicationConfig.replication[0].source.name | string | `"source"` |  |
 | k2k.replicationConfig.replication[0].source.topic[0] | string | `"airline-customers"` |  |
 | k2k.replicationConfig.replication[0].source.topic[1] | string | `"airline-customers-name"` |  |
-| k2k.replicationConfig.replication[1].sink.name | string | `"sink-source-topic"` |  |
-| k2k.replicationConfig.replication[1].sink.partition | string | `"source"` |  |
-| k2k.replicationConfig.replication[1].sink.topic.prefix | string | `"k2k.eot."` |  |
 | k2k.replicationConfig.source.kafka.connection.servers | string | `"general-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"` |  |
 | k2k.replicationConfig.source.kafka.consumer."group.id" | string | `"k2k.eot"` |  |
 | k2k.replicationConfig.source.kafka.registry.url | string | `"http://schema-registry-1:8081"` |  |

@@ -1,0 +1,94 @@
+{{ template "chart.header" . }}
+
+{{ template "chart.deprecationWarning" . }}
+
+{{ template "chart.badgesSection" . }}
+
+{{ template "chart.description" . }}
+
+{{ template "chart.homepageLine" . }}
+
+{{ template "chart.maintainersSection" . }}
+
+{{ template "chart.sourcesSection" . }}
+
+{{ template "chart.requirementsSection" . }}
+
+## Introduction
+
+Lenses Kafka2Kafka
+
+## Prerequisistes
+- Kubernetes 1.23+
+- Helm 3.8.0+
+
+
+```console
+
+helm install kafka2kafka .  --namespace lenses-k2k -f examples/k2k-with-plaintext.yaml
+```
+
+> Note: You need to substitute the placeholder `.` with a reference to your Helm chart registry and repository. For example, in the case of ex-Lenses, you need to use lensesio/lenses
+
+The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example configuration. The Parameters section lists the parameters (#parameters) that can be configured during installation.
+
+## Parameters
+{{ define "chart.valueDefaultColumnRender" }}
+{{- $defaultValue := (default .Default .AutoDefault)  -}}
+{{- $notationType := .NotationType }}
+{{- if (and (hasPrefix "`" $defaultValue) (hasSuffix "`" $defaultValue) ) -}}
+{{- $defaultValue = (toPrettyJson (fromJson (trimAll "`" (default .Default .AutoDefault) ) ) ) -}}
+{{- $notationType = "json" }}
+{{- end -}}
+{{- if (eq $notationType "tpl" ) }}
+<pre lang="{{ $notationType }}">
+{{ .Key }}: |
+{{- $defaultValue | nindent 2 }}
+</pre>
+{{- else if (eq $notationType "email") }}
+<a href="mailto:{{ $defaultValue }}" style="color: green;">"{{ $defaultValue }}"</a>
+{{- else }}
+<pre lang="{{ $notationType }}">
+{{ $defaultValue }}
+</pre>
+{{- end }}
+{{ end }}
+
+{{ define "chart.typeColumnRender" }}
+{{- if (eq .Type "string/email") }}
+<a href="#stringemail" title="{{- template "chart.valuetypes.email" -}}">{{.Type}}</a>
+{{- else if (eq .Type "k8s/storage/persistent-volume/access-modes" )}}
+<a target="_blank"
+   href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes"
+   >{{- .Type }}</a>
+{{- else }}
+{{ .Type }}
+{{- end }}
+{{ end }}
+
+{{ define "chart.valuesTableHtml" }}
+<table height="400px" >
+	<thead>
+		<th>Key</th>
+		<th>Type</th>
+		<th>Default</th>
+		<th>Description</th>
+	</thead>
+	<tbody>
+	{{- range .Values }}
+		<tr>
+			<td id="{{ .Key | replace "." "--" }}"><a href="./values.yaml#L{{ .LineNumber }}">{{ .Key }}</a></td>
+			<td>{{- template "chart.typeColumnRender" . -}}</td>
+			<td>
+				<div style="max-width: 300px;">{{ template "chart.valueDefaultColumnRender" . }}</div>
+			</td>
+			<td>{{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }}</td>
+		</tr>
+	{{- end }}
+	</tbody>
+</table>
+{{ end }}
+
+{{ template "chart.valuesSection" . }}
+
+{{ template "helm-docs.versionFooter" . }}
