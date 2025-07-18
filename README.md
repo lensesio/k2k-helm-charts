@@ -17,6 +17,8 @@ Lenses Kafka2Kafka
 helm install kafka2kafka .  --namespace lenses-k2k -f examples/k2k-with-plaintext.yaml
 ```
 
+> Note: You need to substitute the placeholder `.` with a reference to your Helm chart registry and repository. For example, in the case of ex-Lenses, you need to use lensesio/lenses
+
 The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example configuration. The Parameters section lists the parameters (#parameters) that can be configured during installation.
 
 ## Parameters
@@ -28,7 +30,7 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | additionalVolumeMounts | list | `[]` | Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses Use it in conjuction with lenses.additionalVolumes |
-| additionalVolumes | list | `nil` | Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner. |
+| additionalVolumes | list | `[]` | Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner. |
 | k2k.livenessProbe.enabled | string | `false` | Disables livenessProbe, used while debugging |
 
 ### Custom deployment values

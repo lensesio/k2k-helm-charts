@@ -100,7 +100,7 @@ additionalVolumeMounts: []
 
 # -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
 # @section -- Extras
-additionalVolumes:
+additionalVolumes: []
   # Example usages:
   #   Lenses: load additional plugins (UDFs) in Lenses
   #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
