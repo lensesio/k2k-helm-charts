@@ -40,9 +40,9 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 | affinity | dict | `{}` | Deployment affinity rules |
 | annotations | dict | `{}` | Custom deployment annotations |
 | deployment.resources | object | `{"limits":{"memory":"4Gi"},"requests":{"memory":"2Gi"}}` | Pod resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"lensesio/lenses-agent"}` | Image map |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"lensting/k2k","tag":""}` | Image map |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pullPolicy |
-| image.repository | string | `"lensesio/lenses-agent"` | Image repository |
+| image.repository | string | `"lensting/k2k"` | Image repository |
 | labels | dict | `{}` | Deployment labels |
 | nodeSelector | dict | `{}` | Deployment nodeSelector |
 | podTemplateAnnotations | dict | `{}` | Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations. |

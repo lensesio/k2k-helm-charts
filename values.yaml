@@ -81,7 +81,8 @@ deployment:
 image:
   # -- Image repository
   # @section -- Custom deployment values
-  repository: lensesio/lenses-agent
+  repository: lensting/k2k
+  tag: ""
 
   # -- Default to .Chart.AppVersion
   # tag:
