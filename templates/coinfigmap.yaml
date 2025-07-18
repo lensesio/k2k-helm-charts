@@ -1,9 +1,15 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "k2kApp.fullname" . }}-config
+  name: {{ include "fullname" . | quote }}
   labels:
-    app: {{ include "k2kApp.name" . }}
+    app: {{ include "fullname" . }}
+    chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
+    component: "lenses-kafka2kafka"
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    lenses.io/app: {{ include "fullname" . }}
+    lenses.io/app.type: lenses-k2k-configmap
 data:
   config.yaml: |-
 {{ .Values.k2k.replicationConfig | toYaml | indent 4 }}

@@ -7,9 +7,9 @@ metadata:
     chart: {{printf "%s-%s" .Chart.Name .Chart.Version}}
     release: {{.Release.Name}}
     heritage: {{.Release.Service}}
-    component: "lenses-k2k"
+    component: "lenses-kafka2kafka"
     lenses.io/app: {{include "fullname" .}}
-    lenses.io/app.type: lenses
+    lenses.io/app.type: lenses-k2k-deployment
     {{- range $key, $value := .Values.labels }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
@@ -30,12 +30,7 @@ spec:
     metadata:
       labels:
         app: {{include "fullname" . | quote}}
-        component: "lenses"
-        hostPort: {{ .Values.restPort | quote }}
-        containerPort: {{ .Values.restPort | quote }}
-        {{- range $key, $value := .Values.labels }}
-        {{ $key }}: {{ $value | quote }}
-        {{- end }}
+        component: "lenses-k2k"
       annotations:
         {{- with .Values.monitoring }}
         {{- if .enabled }}
@@ -51,6 +46,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       {{- if .Values.image.imagePullSecrets }}
       imagePullSecrets: {{ .Values.image.imagePullSecrets | toYaml | nindent 8 }}
+      {{- end }}
       {{- if .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml .Values.nodeSelector | nindent 8 }}
@@ -74,18 +70,17 @@ spec:
       dnsConfig:
         {{- toYaml .Values.dnsConfig | nindent 8 }}
       {{- end }}
-      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "k2kApp" . | quote }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- if .Values.containerSecurityContext }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 10 }}
           {{- end }}
           ports:
-          - containerPort: {{ .Values.k2k.monitoring.port }}
-          {{- if .Values.lensesAgent.livenessProbe.enabled }}
+            - containerPort: {{ .Values.k2k.monitoring.port }}
+          {{- if .Values.k2k.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: /
@@ -93,29 +88,31 @@ spec:
             initialDelaySeconds: 300
             periodSeconds: 10
           {{- end }}
-          args:
+          command:
+            - k2k
             - start
             - -f
             - /etc/config/config.yaml
             - -t
-            {{- if .Values.k2k.acceptEULA }}
+          {{- if .Values.k2k.acceptEULA }}
             - --acceptEULA
-            {{- end }}
+          {{- end }}
+          env:
             - name: OTEL_SERVICE_NAME
-              value: {{ .Values.k2k.otelConfig.serviceName | default "k2k" }}
+              value: "{{ .Values.k2k.otelConfig.serviceName | default "k2k" }}"
             - name: OTEL_METRICS_EXPORTER
-              value: {{ .Values.k2k.otelConfig.metricsExporter | default "prometheus" }}
+              value: "{{ .Values.k2k.otelConfig.metricsExporter | default "prometheus" }}"
             - name: OTEL_TRACES_EXPORTER
-              value: {{ .Values.k2k.otelConfig.tracesExporter | default "none" }}
+              value: "{{ .Values.k2k.otelConfig.tracesExporter | default "none" }}"
             - name: OTEL_LOGS_EXPORTER
-              value: {{ .Values.k2k.otelConfig.logsExporter | default "none" }}
+              value: "{{ .Values.k2k.otelConfig.logsExporter | default "none" }}"
             - name: OTEL_EXPORTER_PROMETHEUS_HOST
-              value: {{ .Values.k2k.otelConfig.prometheusHost | default "" }}
+              value: "{{ .Values.k2k.otelConfig.prometheusHost | default "" }}"
             - name: OTEL_EXPORTER_PROMETHEUS_PORT
-              value: {{ .Values.k2k.otelConfig.prometheusPort | default "9090" }}
+              value: "{{ .Values.k2k.monitoring.port | default "9090" }}"
           resources:
             requests:
-              cpu: {{ .Values.deployment.resoureces.requests.cpu | default "500m" }}
+              cpu: {{ .Values.deployment.resources.requests.cpu | default "500m" }}
               memory: {{ .Values.deployment.resources.requests.memory | default "1Gi" }}
             limits:
               cpu: {{ .Values.deployment.resources.limits.cpu | default "1" }}
@@ -123,11 +120,8 @@ spec:
           volumeMounts:
             - name: replication-config
               mountPath: /etc/config
-            - name: config-volume
-              mountPath: /etc/config
-              readOnly: true
             {{- if .Values.additionalVolumeMounts }}
-              {{- toYaml .Values.additionalVolumeMounts | nindent 10 }}
+              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }}
             {{- end }}
       volumes:
         - name: replication-config

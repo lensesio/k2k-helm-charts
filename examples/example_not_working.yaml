@@ -71,30 +71,22 @@ deployment:
   resources:
     requests:
     #   cpu: 1
-      memory: 2Gi
+      memory: 500Mi
     limits:
     #   cpu: 2
-      memory: 4Gi
+      memory: 1Gi
 
-# -- Image map
-# @section -- Custom deployment values
 image:
-  # -- Image repository
-  # @section -- Custom deployment values
-  repository: lensesio/lenses-agent
+  repository: lensting/k2k
+  tag: 0.0.9-alpha
+  imagePullSecrets:
+    - name: artifact-registry-creds
 
-  # -- Default to .Chart.AppVersion
-  # tag:
-  # -- Image pullPolicy
-  # @section -- Custom deployment values
-  pullPolicy: IfNotPresent
-  # -- imagePullSecrets: # any image pull secrets for private registries go here
-  #   - name: regcred
 
 # -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
 # Use it in conjuction with lenses.additionalVolumes
 # @section -- Extras
-additionalVolumeMounts: []
+additionalVolumeMounts:
   # - name: lenses-plugins
   #   mountPath: "/data/plugins"
 
@@ -121,8 +113,8 @@ k2k:
     metricsExporter: "prometheus"
     tracesExporter: "none"
     logsExporter: "none"
-    prometheusHost: ""
-    prometheusPort: "9090"
+    prometheusHost: "0.0.0.0"
+#    prometheusPort: "9090"
   replicationConfig:
     name: "simple_pipeline"
     features:
@@ -150,32 +142,26 @@ k2k:
           group: "k2k.eot"
     source:
       kafka:
-        registry:
-          url: "http://schema-registry-1:8081"
+        # registry:
+        #   url: "http://schema-registry:8081"
         consumer:
-          group.id: "k2k.eot"
+          "group.id": "k2k.eot"
         connection:
-          servers: "general-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
+          servers: "kafka-3:9092"
     target:
       kafka:
-        registry:
-          url: "http://schema-registry-2:8081"
+        # registry:
+        #   url: "http://schema-registry:8081"
         producer:
         connection:
-          servers: "general-dev-2-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
+          servers: "kafka-2:9092"
     replication:
       - source:
           name: source
           topic:
-            - "airline-customers"
-            - "airline-customers-name"
-        sink:
+            - "patients"
+      - sink:
           name: sink-source-topic
           topic:
             prefix: "k2k.eot."
           partition: source
-
-  livenessProbe:
-    # -- (string) Disables livenessProbe, used while debugging
-    # @section -- Extras
-    enabled: false

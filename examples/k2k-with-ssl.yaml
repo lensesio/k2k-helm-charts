@@ -71,37 +71,57 @@ deployment:
   resources:
     requests:
     #   cpu: 1
-      memory: 2Gi
+      memory: 500Mi
     limits:
     #   cpu: 2
-      memory: 4Gi
+      memory: 1Gi
 
-# -- Image map
-# @section -- Custom deployment values
 image:
-  # -- Image repository
-  # @section -- Custom deployment values
-  repository: lensesio/lenses-agent
+  repository: lensting/k2k
+  tag: 0.0.9-alpha
+  imagePullSecrets:
+    - name: artifact-registry-creds
 
-  # -- Default to .Chart.AppVersion
-  # tag:
-  # -- Image pullPolicy
-  # @section -- Custom deployment values
-  pullPolicy: IfNotPresent
-  # -- imagePullSecrets: # any image pull secrets for private registries go here
-  #   - name: regcred
 
 # -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
 # Use it in conjuction with lenses.additionalVolumes
 # @section -- Extras
-additionalVolumeMounts: []
-  # - name: lenses-plugins
-  #   mountPath: "/data/plugins"
-
+additionalVolumeMounts:
+  - name: external-kafka-ca-cert
+    mountPath: "/etc/cacert/caroot.pem"
+    subPath: "caroot.pem"
+  # - name: external-kafka-keystore
+  #   mountPath: "/etc/clientcert"
+  #   subPath: "client.pem"
+  # - name: external-kafka-key
+  #   mountPath: "/etc/clientcert"
+  #   subPath: "key.pem"
+  #- name: external-kafka-all-certs
+  #  mountPath: "/etc/clientcert/all.pem"
+  # subPath: "all.pem"
+  - name: external-kafka-certs-all
+    mountPath: "/etc/clientcert/all.pem"
+    subPath: "all.pem"
 # -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
 # @section -- Extras
+
 additionalVolumes:
-  # Example usages:
+#  - name: external-kafka-caroot
+#    secret:
+#      secretName: external-kafka-caroot
+  # - name: external-kafka-keystore
+  #   secret:
+  #     secretName: external-kafka-keystore
+  # - name: external-kafka-key
+  #   secret:
+  #     secretName: external-kafka-keystore
+  - name: external-kafka-ca-cert
+    secret:
+      secretName: external-kafka-ca-cert
+  - name: external-kafka-certs-all
+    secret:
+      secretName: external-kafka-certs-all
+  # # Example usages:
   #   Lenses: load additional plugins (UDFs) in Lenses
   #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
   # - name: secrets
@@ -121,61 +141,54 @@ k2k:
     metricsExporter: "prometheus"
     tracesExporter: "none"
     logsExporter: "none"
-    prometheusHost: ""
-    prometheusPort: "9090"
+    prometheusHost: "0.0.0.0"
+#    prometheusPort: "9090"
   replicationConfig:
-    name: "simple_pipeline"
+    name: "k2k-demo-env"
     features:
       exactlyOnce: disabled
       headerReplication: disabled
       schemaMapping: disabled
-      offsetCommitOptimizePartition: disabled
+      offsetCommitOptimizePartition: enabled
       tracingHeaders: disabled
-    errorHandling:
-      onCommitSyncTimeout: fail
-      onControlMessageDeserializationError: fail
+      autoCreateControlTopics: enabled
+      autoCreateTopics: enabled
     coordination:
       kafka:
-        charset: "UTF-8"
-        consumer:
         assignment:
           topic: "__k2k-app-eot-assignment"
-          graceWindow: "15 seconds"
-          fencingMaxParallelism: 10
         commit:
           topic: "__k2k-app-eot-consumer-offsets"
-          syncTimeout: "60 seconds"
-          batchSize: 10000
-          batchTimeout: "30 seconds"
           group: "k2k.eot"
     source:
       kafka:
-        registry:
-          url: "http://schema-registry-1:8081"
         consumer:
-          group.id: "k2k.eot"
+          "group.id": "k2k.eot"
+          "security.protocol": "SSL"
+          "ssl.truststore.type": "PEM"
+          "ssl.keystore.type": "PEM"
+          "ssl.truststore.location": "/etc/cacert/caroot.pem"
+          "ssl.keystore.location": "/etc/clientcert/all.pem"
         connection:
-          servers: "general-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
+          servers: "kafka-us-dev-1.enjoy.data-lenses.io:443"
     target:
       kafka:
-        registry:
-          url: "http://schema-registry-2:8081"
         producer:
+          "security.protocol": "SSL"
+          "ssl.truststore.type": "PEM"
+          "ssl.keystore.type": "PEM"
+          "ssl.truststore.location": "/etc/cacert/caroot.pem"
+          "ssl.keystore.location": "/etc/clientcert/all.pem"
         connection:
-          servers: "general-dev-2-kafka-bootstrap.kafka-dev.svc.cluster.local:9092"
+          servers: "kafka-us-dev-1.enjoy.data-lenses.io:443"
     replication:
       - source:
           name: source
           topic:
             - "airline-customers"
             - "airline-customers-name"
-        sink:
+      - sink:
           name: sink-source-topic
           topic:
             prefix: "k2k.eot."
           partition: source
-
-  livenessProbe:
-    # -- (string) Disables livenessProbe, used while debugging
-    # @section -- Extras
-    enabled: false
