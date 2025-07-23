@@ -22,7 +22,7 @@ spec:
   type: {{ .Values.service.type | quote }}
   ports:
     - protocol: TCP
-      port: {{ .Values.k2k.monitoring.port }}
-      targetPort: {{ .Values.k2k.monitoring.port }}
+      port: {{ .Values.k2k.otelConfig.prometheusPort }}
+      targetPort: {{ .Values.k2k.otelConfig.prometheusPort }}
       name: metrics
 {{- end -}}

@@ -73,12 +73,12 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 |-----|------|---------|-------------|
 | deployment.replicas | int | `1` |  |
 | fullnameOverride | string | `""` |  |
-| k2k.acceptEULA | bool | `true` |  |
-| k2k.monitoring.port | int | `9090` |  |
+| k2k.additionalEnv | string | `nil` |  |
+| k2k.license.acceptEULA | bool | `true` |  |
 | k2k.otelConfig.logsExporter | string | `"none"` |  |
 | k2k.otelConfig.metricsExporter | string | `"prometheus"` |  |
-| k2k.otelConfig.prometheusHost | string | `""` |  |
-| k2k.otelConfig.prometheusPort | string | `"9090"` |  |
+| k2k.otelConfig.prometheusHost | string | `"0.0.0.0"` |  |
+| k2k.otelConfig.prometheusPort | int | `9090` |  |
 | k2k.otelConfig.serviceName | string | `"k2k"` |  |
 | k2k.otelConfig.tracesExporter | string | `"none"` |  |
 | k2k.replicationConfig | object | `{}` |  |

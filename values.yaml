@@ -114,16 +114,15 @@ additionalVolumes: []
   #     claimName: lenses-plugins
 
 k2k:
-  acceptEULA: true
-  monitoring:
-    port: 9090
+  license:
+    acceptEULA: true
   otelConfig:
     serviceName: "k2k"
     metricsExporter: "prometheus"
     tracesExporter: "none"
     logsExporter: "none"
     prometheusHost: "0.0.0.0"
-    prometheusPort: "9090"
+    prometheusPort: 9090
   replicationConfig: {}
     # (object) Replication configuration for k2k. See documentation for structure.
     # @section -- K2K replication config
@@ -166,7 +165,11 @@ k2k:
     #       topic:
     #         prefix: "k2k.eot."
     #       partition: source
-
+  # Additional env variables appended to deployment
+  # Follows the format of [EnvVar spec](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
+  additionalEnv: {}
+    # - name: FOO
+    #   value: bar
 
   livenessProbe:
     # -- (string) Disables livenessProbe, used while debugging

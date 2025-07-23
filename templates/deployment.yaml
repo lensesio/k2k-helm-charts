@@ -32,10 +32,10 @@ spec:
         app: {{include "fullname" . | quote}}
         component: "lenses-k2k"
       annotations:
-        {{- with .Values.monitoring }}
-        {{- if .enabled }}
+        {{- with .Values.k2k.otelConfig }}
+        {{- if eq .metricsExporter "prometheus" }}
         prometheus.io/scrape: "true"
-        prometheus.io/port: "{{ .port }}"
+        prometheus.io/port: "{{ .prometheusPort }}"
         prometheus.io/path: "/metrics"
         {{- end }}
         {{- end }}
@@ -79,12 +79,12 @@ spec:
             {{- toYaml .Values.containerSecurityContext | nindent 10 }}
           {{- end }}
           ports:
-            - containerPort: {{ .Values.k2k.monitoring.port }}
+            - containerPort: {{ .Values.k2k.otelConfig.prometheusPort }}
           {{- if .Values.k2k.livenessProbe.enabled }}
           livenessProbe:
             httpGet:
               path: /
-              port: {{ .Values.k2k.monitoring.port }}
+              port: {{ .Values.k2k.otelConfig.prometheusPort }}
             initialDelaySeconds: 300
             periodSeconds: 10
           {{- end }}
@@ -94,22 +94,27 @@ spec:
             - -f
             - /etc/config/config.yaml
             - -t
-          {{- if .Values.k2k.acceptEULA }}
+          {{- if .Values.k2k.license.acceptEULA }}
             - --acceptEULA
           {{- end }}
           env:
             - name: OTEL_SERVICE_NAME
-              value: "{{ .Values.k2k.otelConfig.serviceName | default "k2k" }}"
+              value: "{{ .Values.k2k.otelConfig.serviceName }}"
             - name: OTEL_METRICS_EXPORTER
-              value: "{{ .Values.k2k.otelConfig.metricsExporter | default "prometheus" }}"
+              value: "{{ .Values.k2k.otelConfig.metricsExporter }}"
             - name: OTEL_TRACES_EXPORTER
-              value: "{{ .Values.k2k.otelConfig.tracesExporter | default "none" }}"
+              value: "{{ .Values.k2k.otelConfig.tracesExporter }}"
             - name: OTEL_LOGS_EXPORTER
-              value: "{{ .Values.k2k.otelConfig.logsExporter | default "none" }}"
+              value: "{{ .Values.k2k.otelConfig.logsExporter }}"
             - name: OTEL_EXPORTER_PROMETHEUS_HOST
-              value: "{{ .Values.k2k.otelConfig.prometheusHost | default "" }}"
+              value: "{{ .Values.k2k.otelConfig.prometheusHost }}"
             - name: OTEL_EXPORTER_PROMETHEUS_PORT
-              value: "{{ .Values.k2k.monitoring.port | default "9090" }}"
+              value: "{{ .Values.k2k.otelConfig.prometheusPort }}"
+
+              # Additional env variables
+            {{- if .Values.k2k.additionalEnv }}
+            {{- toYaml .Values.k2k.additionalEnv | nindent 12 }}
+            {{- end }}
           resources:
             requests:
               cpu: {{ .Values.deployment.resources.requests.cpu | default "500m" }}
@@ -121,7 +126,7 @@ spec:
             - name: replication-config
               mountPath: /etc/config
             {{- if .Values.additionalVolumeMounts }}
-              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }}
+            {{- toYaml .Values.additionalVolumeMounts | nindent 12 }}
             {{- end }}
       volumes:
         - name: replication-config
@@ -131,5 +136,5 @@ spec:
               - key: config.yaml
                 path: config.yaml
         {{- if .Values.additionalVolumes }}
-          {{- toYaml .Values.additionalVolumes | nindent 8 }}
+        {{- toYaml .Values.additionalVolumes | nindent 8 }}
         {{- end }}

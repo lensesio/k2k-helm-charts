@@ -1,67 +1,8 @@
-nameOverride: ""
-fullnameOverride: ""
-# -- (dict) Custom deployment annotations
-# @section -- Custom deployment values
-annotations: {}
-# -- (dict) Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations.
-# @section -- Custom deployment values
-podTemplateAnnotations: {}
-# -- (dict) Deployment labels
-# @section -- Custom deployment values
-labels: {}
-# -- (dict) Deployment strategy
-# @section -- Custom deployment values
-strategy: {}
-# -- (dict) Deployment nodeSelector
-# @section -- Custom deployment values
-nodeSelector: {}
-# -- (dict) Deployment tolerations
-# @section -- Custom deployment values
-tolerations: []
-# -- (dict) Deployment affinity rules
-# @section -- Custom deployment values
-affinity: {}
-# -- (dict) Deployment security context
-# @section -- Custom deployment values
-securityContext: {}
-# dnsPolicy: "None" # Optional dnsPolicy and dnsConfig to put into the Deployment's PodTemplateSpec.
-# dnsConfig:
-#   nameservers:
-#     - 1.1.1.1
-# containerSecurityContext: # Optional, plugged in into the both the deployment's main app container and the sidecar.
-#   allowPrivilegeEscalation: false
-
-
-# @section -- Lenses HQ deployment service values
 service:
   # -- (bool) Deciding factor whether Lenses HQ service will be created and which type
   # @section -- Lenses HQ deployment service values
   enabled: true
-
-  # -- (string) Type of service to be created.
-  # @section -- Lenses HQ deployment service values
   type: ClusterIP
-
-  # -- (dict) Additional service annotations
-  # @section -- Lenses HQ deployment service values
-  annotations: {}
-
-
-# -- User to be used by Lenses to deploy apps
-# @section -- Permission scope values
-serviceAccount:
-  # -- (bool) In case "true" new SA will be created with service.name as a SA name.
-  # @section -- Permission scope values
-  create: false
-
-  # -- (string) Name of Service Account. In case serviceAccount.create is *false*, existing SA with defined name here will be used.
-  # @section -- Permission scope values
-  name: default
-
-  # -- (dict) Additional service account annotations.
-  # @section -- Permission scope values
-  annotations: {}
-
 
 deployment:
   replicas: 1
@@ -82,32 +23,14 @@ image:
   imagePullSecrets:
     - name: artifact-registry-creds
 
-
-# -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
-# Use it in conjuction with lenses.additionalVolumes
-# @section -- Extras
-additionalVolumeMounts:
-  # - name: lenses-plugins
-  #   mountPath: "/data/plugins"
-
-# -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
-# @section -- Extras
-additionalVolumes:
-  # Example usages:
-  #   Lenses: load additional plugins (UDFs) in Lenses
-  #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
-  # - name: secrets
-  #   secret:
-  #     secretName: lenses-super-secrets
-  # Note: PersistentVolumeClaim should already exist before deploying Helm chart
-  # - name: lenses-plugins
-  #   persistentVolumeClaim:
-  #     claimName: lenses-plugins
-
 k2k:
+  additionalEnv:
+    - name: SASL_JAAS_CONFIG
+      valueFrom:
+        secretKeyRef:
+          name: kafka-sasl-jaas-secret
+          key: sasl-jaas.conf
   acceptEULA: true
-  monitoring:
-    port: 9090
   otelConfig:
     serviceName: "k2k"
     metricsExporter: "prometheus"
