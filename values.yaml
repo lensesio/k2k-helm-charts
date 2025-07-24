@@ -167,7 +167,7 @@ k2k:
     #       partition: source
   # Additional env variables appended to deployment
   # Follows the format of [EnvVar spec](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
-  additionalEnv: {}
+  additionalEnv:
     # - name: FOO
     #   value: bar
 

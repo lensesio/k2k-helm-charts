@@ -18,10 +18,11 @@ deployment:
       memory: 1Gi
 
 image:
+  #repository: lensting/k2k
   repository: lensting/k2k
-  tag: 0.0.9-alpha
+  tag: main
   imagePullSecrets:
-    - name: artifact-registry-creds
+    - name: ghcr-secret
 
 k2k:
   additionalEnv:

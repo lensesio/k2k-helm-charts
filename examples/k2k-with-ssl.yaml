@@ -22,10 +22,11 @@ deployment:
       memory: 1Gi
 
 image:
+  #repository:
   repository: lensting/k2k
-  tag: 0.0.9-alpha
+  tag: latest
   imagePullSecrets:
-    - name: artifact-registry-creds
+    - name: ghcr-secret
 
 
 # -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
@@ -82,14 +83,14 @@ k2k:
     source:
       kafka:
         consumer:
-          "group.id": "k2k.eot"
-          "security.protocol": "SSL"
-          "ssl.truststore.type": "PEM"
-          "ssl.keystore.type": "PEM"
-          "ssl.truststore.location": "/etc/cacert/caroot.pem"
-          "ssl.keystore.location": "/etc/clientcert/all.pem"
+          group.id: "k2k.eot"
+          security.protocol: "SSL"
+          ssl.truststore.type: "PEM"
+          ssl.keystore.type: "PEM"
+          ssl.truststore.location: "/etc/cacert/caroot.pem"
+          ssl.keystore.location: "/etc/clientcert/all.pem"
         connection:
-          servers: "kafka-us-dev-1.enjoy.data-lenses.io:443"
+          servers: "kafka-us-dev-1.domain.com:443"
     target:
       kafka:
         producer:
@@ -99,7 +100,7 @@ k2k:
           "ssl.truststore.location": "/etc/cacert/caroot.pem"
           "ssl.keystore.location": "/etc/clientcert/all.pem"
         connection:
-          servers: "kafka-us-dev-1.enjoy.data-lenses.io:443"
+          servers: "kafka-us-dev-1.domain.com:443"
     replication:
       - source:
           name: source

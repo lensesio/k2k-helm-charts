@@ -93,6 +93,10 @@ spec:
             - start
             - -f
             - /etc/config/config.yaml
+            - -g
+            - enabled
+            - --template-engine
+            - enabled
             - -t
           {{- if .Values.k2k.license.acceptEULA }}
             - --acceptEULA
