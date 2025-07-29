@@ -114,7 +114,35 @@ spec:
               value: "{{ .Values.k2k.otelConfig.prometheusHost }}"
             - name: OTEL_EXPORTER_PROMETHEUS_PORT
               value: "{{ .Values.k2k.otelConfig.prometheusPort }}"
-
+            {{- if .Values.deployment.resources.limits.memory }}
+            {{- $memoryLimit := .Values.deployment.resources.limits.memory }}
+            {{- $memoryBytes := 0 }}
+            {{- if hasSuffix "Gi" $memoryLimit }}
+              {{- $memoryBytes = mul (trimSuffix "Gi" $memoryLimit | float64) 1073741824 }}
+            {{- else if hasSuffix "G" $memoryLimit }}
+              {{- $memoryBytes = mul (trimSuffix "G" $memoryLimit | float64) 1000000000 }}
+            {{- else if hasSuffix "Mi" $memoryLimit }}
+              {{- $memoryBytes = mul (trimSuffix "Mi" $memoryLimit | float64) 1048576 }}
+            {{- else if hasSuffix "M" $memoryLimit }}
+              {{- $memoryBytes = mul (trimSuffix "M" $memoryLimit | float64) 1000000 }}
+            {{- else if hasSuffix "Ki" $memoryLimit }}
+              {{- $memoryBytes = mul (trimSuffix "Ki" $memoryLimit | float64) 1024 }}
+            {{- else if hasSuffix "K" $memoryLimit }}
+              {{- $memoryBytes = mul (trimSuffix "K" $memoryLimit | float64) 1000 }}
+            {{- else }}
+              {{- $memoryBytes = $memoryLimit | float64 }}
+            {{- end }}
+            {{- if le $memoryBytes 1073741824 }}
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=70.0"
+            {{- else if le $memoryBytes 1610612736 }}
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=75.0"
+            {{- else }}
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=85.0"
+            {{- end }}
+            {{- end }}
               # Additional env variables
             {{- if .Values.k2k.additionalEnv }}
             {{- toYaml .Values.k2k.additionalEnv | nindent 12 }}
