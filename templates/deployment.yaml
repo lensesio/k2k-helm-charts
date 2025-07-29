@@ -114,34 +114,33 @@ spec:
               value: "{{ .Values.k2k.otelConfig.prometheusHost }}"
             - name: OTEL_EXPORTER_PROMETHEUS_PORT
               value: "{{ .Values.k2k.otelConfig.prometheusPort }}"
-            {{- if .Values.deployment.resources.limits.memory }}
-            {{- $memoryLimit := .Values.deployment.resources.limits.memory }}
+            {{- $defaultMemoryLimit := "2Gi" }}
+            {{- $memoryLimit := .Values.deployment.resources.limits.memory | default $defaultMemoryLimit }}
             {{- $memoryBytes := 0 }}
             {{- if hasSuffix "Gi" $memoryLimit }}
-              {{- $memoryBytes = mul (trimSuffix "Gi" $memoryLimit | float64) 1073741824 }}
+              {{- $memoryBytes = mulf (trimSuffix "Gi" $memoryLimit | float64) 1073741824 }}
             {{- else if hasSuffix "G" $memoryLimit }}
-              {{- $memoryBytes = mul (trimSuffix "G" $memoryLimit | float64) 1000000000 }}
+              {{- $memoryBytes = mulf (trimSuffix "G" $memoryLimit | float64) 1000000000 }}
             {{- else if hasSuffix "Mi" $memoryLimit }}
-              {{- $memoryBytes = mul (trimSuffix "Mi" $memoryLimit | float64) 1048576 }}
+              {{- $memoryBytes = mulf (trimSuffix "Mi" $memoryLimit | float64) 1048576 }}
             {{- else if hasSuffix "M" $memoryLimit }}
-              {{- $memoryBytes = mul (trimSuffix "M" $memoryLimit | float64) 1000000 }}
+              {{- $memoryBytes = mulf (trimSuffix "M" $memoryLimit | float64) 1000000 }}
             {{- else if hasSuffix "Ki" $memoryLimit }}
-              {{- $memoryBytes = mul (trimSuffix "Ki" $memoryLimit | float64) 1024 }}
+              {{- $memoryBytes = mulf (trimSuffix "Ki" $memoryLimit | float64) 1024 }}
             {{- else if hasSuffix "K" $memoryLimit }}
-              {{- $memoryBytes = mul (trimSuffix "K" $memoryLimit | float64) 1000 }}
+              {{- $memoryBytes = mulf (trimSuffix "K" $memoryLimit | float64) 1000 }}
             {{- else }}
               {{- $memoryBytes = $memoryLimit | float64 }}
             {{- end }}
-            {{- if le $memoryBytes 1073741824 }}
+            {{- if le $memoryBytes 1073741824.0 }}
             - name: JAVA_OPTS
               value: "-XX:MaxRAMPercentage=70.0"
-            {{- else if le $memoryBytes 1610612736 }}
+            {{- else if le $memoryBytes 1610612736.0 }}
             - name: JAVA_OPTS
               value: "-XX:MaxRAMPercentage=75.0"
             {{- else }}
             - name: JAVA_OPTS
               value: "-XX:MaxRAMPercentage=85.0"
-            {{- end }}
             {{- end }}
               # Additional env variables
             {{- if .Values.k2k.additionalEnv }}
@@ -153,7 +152,7 @@ spec:
               memory: {{ .Values.deployment.resources.requests.memory | default "1Gi" }}
             limits:
               cpu: {{ .Values.deployment.resources.limits.cpu | default "1" }}
-              memory: {{ .Values.deployment.resources.limits.memory | default "2Gi" }}
+              memory: {{ .Values.deployment.resources.limits.memory | default $defaultMemoryLimit }}
           volumeMounts:
             - name: replication-config
               mountPath: /etc/config
