@@ -7,7 +7,7 @@ metadata:
     chart: {{printf "%s-%s" .Chart.Name .Chart.Version}}
     release: {{.Release.Name}}
     heritage: {{.Release.Service}}
-    component: "lenses-kafka2kafka"
+    component: "lenses-k2k"
     lenses.io/app: {{include "fullname" .}}
     lenses.io/app.type: lenses-k2k-deployment
     {{- range $key, $value := .Values.labels }}
@@ -70,10 +70,16 @@ spec:
       dnsConfig:
         {{- toYaml .Values.dnsConfig | nindent 8 }}
       {{- end }}
+      {{- if .Values.additionalPodSpec }}
+      {{- toYaml .Values.additionalPodSpec | nindent 6 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ include "lensesK2KImage" . | quote }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.additionalContainerSpec }}
+          {{- toYaml .Values.additionalContainerSpec | nindent 8 }}
+          {{- end }}
           {{- if .Values.containerSecurityContext }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 10 }}
@@ -98,9 +104,6 @@ spec:
             - --template-engine
             - enabled
             - -t
-          {{- if .Values.k2k.license.acceptEULA }}
-            - --acceptEULA
-          {{- end }}
           env:
             - name: OTEL_SERVICE_NAME
               value: "{{ .Values.k2k.otelConfig.serviceName }}"
@@ -169,3 +172,12 @@ spec:
         {{- if .Values.additionalVolumes }}
         {{- toYaml .Values.additionalVolumes | nindent 8 }}
         {{- end }}
+
+      {{- if .Values.sidecarContainers }}
+      {{- toYaml .Values.sidecarContainers | nindent 6 }}
+      {{- end }}
+
+      {{- if .Values.initContainers }}
+      initContainers:
+      {{- toYaml .Values.initContainers | nindent 6 }}
+      {{- end }}
