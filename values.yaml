@@ -32,18 +32,18 @@ securityContext: {}
 #   allowPrivilegeEscalation: false
 
 
-# @section -- Lenses HQ deployment service values
+# @section -- Lenses K2K deployment service values
 service:
-  # -- (bool) Deciding factor whether Lenses HQ service will be created and which type
-  # @section -- Lenses HQ deployment service values
+  # -- (bool) Deciding factor whether Lenses K2K service will be created and which type
+  # @section -- Lenses K2K deployment service values
   enabled: true
 
   # -- (string) Type of service to be created.
-  # @section -- Lenses HQ deployment service values
+  # @section -- Lenses K2K deployment service values
   type: ClusterIP
 
   # -- (dict) Additional service annotations
-  # @section -- Lenses HQ deployment service values
+  # @section -- Lenses K2K deployment service values
   annotations: {}
 
 
@@ -63,11 +63,11 @@ serviceAccount:
   annotations: {}
 
 
+#  Resource management
+# -- Pod resources
+# @section -- Custom deployment values
 deployment:
   replicas: 1
-  #  Resource management
-  # -- Pod resources
-  # @section -- Custom deployment values
   resources:
     requests:
     #   cpu: 1
@@ -82,7 +82,6 @@ image:
   # -- Image repository
   # @section -- Custom deployment values
   repository: lensting/k2k
-  tag: ""
 
   # -- Default to .Chart.AppVersion
   # tag:
@@ -114,8 +113,9 @@ additionalVolumes: []
   #     claimName: lenses-plugins
 
 k2k:
-  license:
-    acceptEULA: true
+
+  # -- (object) Otel configuration section.
+  # @section -- K2K OTEL configs
   otelConfig:
     serviceName: "k2k"
     metricsExporter: "prometheus"
@@ -123,9 +123,10 @@ k2k:
     logsExporter: "none"
     prometheusHost: "0.0.0.0"
     prometheusPort: 9090
+
+  # -- (object) Replication configuration for k2k. See documentation for structure.
+  # @section -- K2K replication config
   replicationConfig: {}
-    # (object) Replication configuration for k2k. See documentation for structure.
-    # @section -- K2K replication config
     # Example:
     # name: "k2k-demo-env"
     # features:
@@ -165,13 +166,23 @@ k2k:
     #       topic:
     #         prefix: "k2k.eot."
     #       partition: source
+
+  # -- (list) Additional env variables appended to deployment
+  # @section -- Custom deployment values
   # Additional env variables appended to deployment
-  # Follows the format of [EnvVar spec](https://kubernetes.io/docs/tasks/inject-data-application/define-environment-variable-container/)
   additionalEnv:
     # - name: FOO
     #   value: bar
 
+  # -- (string) Disables livenessProbe, used while debugging
+  # @section -- Extras
   livenessProbe:
-    # -- (string) Disables livenessProbe, used while debugging
-    # @section -- Extras
     enabled: false
+
+# -- (list) Optionally add arbitrary fields to the pod spec (e.g. priorityClassName, priority, etc)
+# @section -- Extras
+additionalPodSpec:
+
+# -- (list) # Optionally add arbitrary fields to the main container spec (e.g. tty, stdin, etc)
+# @section -- Extras
+additionalContainerSpec:

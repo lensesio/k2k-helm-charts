@@ -1,27 +1,49 @@
 # lenses-k2k
 
-![Version: 0.0.9](https://img.shields.io/badge/Version-0.0.9-informational?style=flat-square) ![AppVersion: 0.0.9](https://img.shields.io/badge/AppVersion-0.0.9-informational?style=flat-square)
+![Version: 0.0.11](https://img.shields.io/badge/Version-0.0.11-informational?style=flat-square) ![AppVersion: 0.0.11](https://img.shields.io/badge/AppVersion-0.0.11-informational?style=flat-square)
 
 A Helm chart for Lenses K2K Replicator
 
 ## Introduction
 
-Lenses Kafka2Kafka
+Lenses K2K is an application that allows you to replicate Kafka topics from one Kafka cluster to another.
 
 ## Prerequisistes
 - Kubernetes 1.23+
 - Helm 3.8.0+
 
+## Current Features
+✅ Exactly once message delivery.
+
+✅ Schema replication between Schema Registries  when Confluent Schema Registry API compatibility is in place
+
+✅ Flexible topic routing.
+
+✅ Creates the topic if it does not exist, matching the source cluster configuration
+
+## Current Limitations
+K2K is in active development, and this is the 1st alpha release.
+- Supports only Schema Registries compatible with the Confluent Schema Registry API.
+- When using Schema Registry for replication, it is assumed that both the Key and Value content are serialized using Schema Registry.
+
+## Roadmap
+- Filtering, masking & obfuscation, reshaping the payloads.
+- Kafka records content based routing
+- Replicate consumer group offsets.
+- Support for AWS Glue Schema Registries.
+- Integration into Lenses for self-service deployment and observation.
+- Continuously sync topic configuration
+- Continuously sync topic partitions
+
+## Installation
 ```console
 
-helm install kafka2kafka .  --namespace lenses-k2k -f examples/k2k-with-plaintext.yaml
+helm install k2k .  --namespace lenses-k2k -f examples/k2k-with-plaintext.yaml
 ```
 
 > Note: You need to substitute the placeholder `.` with a reference to your Helm chart registry and repository. For example, in the case of ex-Lenses, you need to use lensesio/lenses
 
-The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example configuration. The Parameters section lists the parameters (#parameters) that can be configured during installation.
-
-## Parameters
+The command deploys Lenses K2K on the Kubernetes cluster in the example configuration. The Parameters section lists the parameters (#parameters) that can be configured during installation.
 
 ## Values
 
@@ -29,9 +51,11 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
+| additionalContainerSpec | list | `nil` | # Optionally add arbitrary fields to the main container spec (e.g. tty, stdin, etc) |
+| additionalPodSpec | list | `nil` | Optionally add arbitrary fields to the pod spec (e.g. priorityClassName, priority, etc) |
 | additionalVolumeMounts | list | `[]` | Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses Use it in conjuction with lenses.additionalVolumes |
 | additionalVolumes | list | `[]` | Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner. |
-| k2k.livenessProbe.enabled | string | `false` | Disables livenessProbe, used while debugging |
+| k2k.livenessProbe | string | `{"enabled":false}` | Disables livenessProbe, used while debugging |
 
 ### Custom deployment values
 
@@ -39,10 +63,11 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 |-----|------|---------|-------------|
 | affinity | dict | `{}` | Deployment affinity rules |
 | annotations | dict | `{}` | Custom deployment annotations |
-| deployment.resources | object | `{"limits":{"memory":"4Gi"},"requests":{"memory":"2Gi"}}` | Pod resources |
-| image | object | `{"pullPolicy":"IfNotPresent","repository":"lensting/k2k","tag":""}` | Image map |
+| deployment | object | `{"replicas":1,"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"1Gi"}}}` | Pod resources |
+| image | object | `{"pullPolicy":"IfNotPresent","repository":"lensting/k2k"}` | Image map |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pullPolicy |
 | image.repository | string | `"lensting/k2k"` | Image repository |
+| k2k.additionalEnv | list | `nil` | Additional env variables appended to deployment Additional env variables appended to deployment |
 | labels | dict | `{}` | Deployment labels |
 | nodeSelector | dict | `{}` | Deployment nodeSelector |
 | podTemplateAnnotations | dict | `{}` | Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations. |
@@ -50,12 +75,24 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 | strategy | dict | `{}` | Deployment strategy |
 | tolerations | dict | `[]` | Deployment tolerations |
 
-### Lenses HQ deployment service values
+### K2K OTEL configs
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| k2k.otelConfig | object | `{"logsExporter":"none","metricsExporter":"prometheus","prometheusHost":"0.0.0.0","prometheusPort":9090,"serviceName":"k2k","tracesExporter":"none"}` | Otel configuration section. |
+
+### K2K replication config
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| k2k.replicationConfig | object | `{}` | Replication configuration for k2k. See documentation for structure. |
+
+### Lenses K2K deployment service values
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | service.annotations | dict | `{}` | Additional service annotations |
-| service.enabled | bool | `true` | Deciding factor whether Lenses HQ service will be created and which type |
+| service.enabled | bool | `true` | Deciding factor whether Lenses K2K service will be created and which type |
 | service.type | string | `"ClusterIP"` | Type of service to be created. |
 
 ### Permission scope values
@@ -71,17 +108,7 @@ The command deploys Lenses Kafka2Kafka on the Kubernetes cluster in the example 
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| deployment.replicas | int | `1` |  |
 | fullnameOverride | string | `""` |  |
-| k2k.additionalEnv | string | `nil` |  |
-| k2k.license.acceptEULA | bool | `true` |  |
-| k2k.otelConfig.logsExporter | string | `"none"` |  |
-| k2k.otelConfig.metricsExporter | string | `"prometheus"` |  |
-| k2k.otelConfig.prometheusHost | string | `"0.0.0.0"` |  |
-| k2k.otelConfig.prometheusPort | int | `9090` |  |
-| k2k.otelConfig.serviceName | string | `"k2k"` |  |
-| k2k.otelConfig.tracesExporter | string | `"none"` |  |
-| k2k.replicationConfig | object | `{}` |  |
 | nameOverride | string | `""` |  |
 
 ----------------------------------------------
