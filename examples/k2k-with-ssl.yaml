@@ -68,6 +68,9 @@ k2k:
       tracingHeaders: disabled
       autoCreateControlTopics: enabled
       autoCreateTopics: enabled
+    license:
+      acceptEULA: <set to true if you accept the EULA>
+      token: "<obtain the free license and copy here>"
     coordination:
       kafka:
         assignment:

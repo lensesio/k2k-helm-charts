@@ -166,6 +166,9 @@ k2k:
     #       topic:
     #         prefix: "k2k.eot."
     #       partition: source
+    # license:
+    #   acceptEULA: false
+    #   token: "invalid-token"
 
   # -- (list) Additional env variables appended to deployment
   # @section -- Custom deployment values
