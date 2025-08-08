@@ -22,11 +22,7 @@ deployment:
       memory: 1Gi
 
 image:
-  #repository:
   repository: lensting/k2k
-  tag: latest
-  imagePullSecrets:
-    - name: ghcr-secret
 
 
 # -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
@@ -55,7 +51,6 @@ k2k:
         secretKeyRef:
           name: kafka-sasl-jaas-secret
           key: sasl-jaas.conf
-  acceptEULA: true
   otelConfig:
     serviceName: "k2k"
     metricsExporter: "prometheus"

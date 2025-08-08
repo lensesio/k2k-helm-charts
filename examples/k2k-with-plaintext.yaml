@@ -18,20 +18,9 @@ deployment:
       memory: 1Gi
 
 image:
-  #repository: lensting/k2k
   repository: lensting/k2k
-  tag: main
-  imagePullSecrets:
-    - name: ghcr-secret
 
 k2k:
-  additionalEnv:
-    - name: SASL_JAAS_CONFIG
-      valueFrom:
-        secretKeyRef:
-          name: kafka-sasl-jaas-secret
-          key: sasl-jaas.conf
-  acceptEULA: true
   otelConfig:
     serviceName: "k2k"
     metricsExporter: "prometheus"
@@ -61,12 +50,12 @@ k2k:
         consumer:
           "group.id": "k2k.eot"
         connection:
-          servers: "kafka-1:9092"
+          servers: "your-kafka-cluster:9092"
     target:
       kafka:
         producer:
         connection:
-          servers: "kafka-2:9092"
+          servers: "your-kafka-cluster:9092"
     replication:
       - source:
           name: source

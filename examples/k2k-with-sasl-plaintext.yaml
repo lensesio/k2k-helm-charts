@@ -23,10 +23,6 @@ deployment:
 
 image:
   repository: lensting/k2k
-  #repository: lensting/k2k
-  tag: 0.0.10-debug
-  imagePullSecrets:
-    - name: artifact-registry-creds
 
 k2k:
   additionalEnv:
@@ -60,7 +56,7 @@ k2k:
           sasl.mechanism: "SCRAM-SHA-512"
           sasl.jaas.config: ${env:string:SASL_JAAS_CONFIG}
         connection:
-          servers: "enjoy-v3-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9093"
+          servers: "your-kafka-cluster:9093"
     source:
       kafka:
         consumer:
@@ -70,7 +66,7 @@ k2k:
           sasl.mechanism: "SCRAM-SHA-512"
           sasl.jaas.config: ${env:string:SASL_JAAS_CONFIG}
         connection:
-          servers: "enjoy-v3-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9093"
+          servers: "your-kafka-cluster:9093"
     target:
       kafka:
         producer:
@@ -80,7 +76,7 @@ k2k:
           sasl.mechanism: "SCRAM-SHA-512"
           sasl.jaas.config: ${env:string:SASL_JAAS_CONFIG}
         connection:
-          servers: "enjoy-v3-dev-1-kafka-bootstrap.kafka-dev.svc.cluster.local:9093"
+          servers: "your-kafka-cluster:9093"
     replication:
       - source:
           name: source                             #required
