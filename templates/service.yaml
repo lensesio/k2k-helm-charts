@@ -10,7 +10,7 @@ metadata:
     heritage: {{ .Release.Service }}
     release: {{ .Release.Name }}
     lenses.io/app: {{ include "fullname" . }}
-    lenses.io/app.type: lenses-k2k-service
+    lenses.io/app.type: k2k-service
     {{- range $key, $value := .Values.labels }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}

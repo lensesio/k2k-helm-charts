@@ -1,11 +1,11 @@
-# @section -- Lenses HQ deployment service values
+# @section -- Lenses K2K deployment service values
 service:
-  # -- (bool) Deciding factor whether Lenses HQ service will be created and which type
-  # @section -- Lenses HQ deployment service values
+  # -- (bool) Deciding factor whether Lenses K2K service will be created and which type
+  # @section -- Lenses K2K deployment service values
   enabled: true
 
   # -- (string) Type of service to be created.
-  # @section -- Lenses HQ deployment service values
+  # @section -- Lenses K2K deployment service values
   type: ClusterIP
 
 deployment:
@@ -22,8 +22,7 @@ deployment:
       memory: 1Gi
 
 image:
-  repository: lensting/k2k
-
+  repository: lensesio/k2k
 
 # -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
 # Use it in conjuction with lenses.additionalVolumes
@@ -69,7 +68,7 @@ k2k:
       autoCreateControlTopics: enabled
       autoCreateTopics: enabled
     license:
-      acceptEULA: <set to true if you accept the EULA>
+      acceptEula: <set to true if you accept the EULA>
       token: "<obtain the free license and copy here>"
     coordination:
       kafka:

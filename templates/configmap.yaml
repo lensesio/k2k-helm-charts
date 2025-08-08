@@ -9,7 +9,7 @@ metadata:
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
     lenses.io/app: {{ include "fullname" . }}
-    lenses.io/app.type: lenses-k2k-configmap
+    lenses.io/app.type: k2k-configmap
 data:
   config.yaml: |-
 {{ .Values.k2k.replicationConfig | toYaml | indent 4 }}

@@ -62,7 +62,6 @@ serviceAccount:
   # @section -- Permission scope values
   annotations: {}
 
-
 #  Resource management
 # -- Pod resources
 # @section -- Custom deployment values
@@ -81,7 +80,7 @@ deployment:
 image:
   # -- Image repository
   # @section -- Custom deployment values
-  repository: lensting/k2k
+  repository: lensesio/k2k
 
   # -- Default to .Chart.AppVersion
   # tag:
@@ -167,7 +166,7 @@ k2k:
     #         prefix: "k2k.eot."
     #       partition: source
     # license:
-    #   acceptEULA: false
+    #   acceptEula: false
     #   token: "invalid-token"
 
   # -- (list) Additional env variables appended to deployment

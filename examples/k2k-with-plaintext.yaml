@@ -1,6 +1,6 @@
 service:
-  # -- (bool) Deciding factor whether Lenses HQ service will be created and which type
-  # @section -- Lenses HQ deployment service values
+  # -- (bool) Deciding factor whether Lenses K2K service will be created and which type
+  # @section -- Lenses K2K deployment service values
   enabled: true
   type: ClusterIP
 
@@ -18,7 +18,7 @@ deployment:
       memory: 1Gi
 
 image:
-  repository: lensting/k2k
+  repository: lensesio/k2k
 
 k2k:
   otelConfig:
@@ -39,7 +39,7 @@ k2k:
       autoCreateControlTopics: enabled
       autoCreateTopics: enabled
     license:
-      acceptEULA: <set to true if you accept the EULA>
+      acceptEula: <set to true if you accept the EULA>
       token: "<obtain the free license and copy here>"
     coordination:
       kafka:

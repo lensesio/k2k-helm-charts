@@ -7,9 +7,9 @@ metadata:
     chart: {{printf "%s-%s" .Chart.Name .Chart.Version}}
     release: {{.Release.Name}}
     heritage: {{.Release.Service}}
-    component: "lenses-k2k"
+    component: "k2k"
     lenses.io/app: {{include "fullname" .}}
-    lenses.io/app.type: lenses-k2k-deployment
+    lenses.io/app.type: k2k-deployment
     {{- range $key, $value := .Values.labels }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
@@ -30,8 +30,9 @@ spec:
     metadata:
       labels:
         app: {{include "fullname" . | quote}}
-        component: "lenses-k2k"
+        component: "k2k"
       annotations:
+        checksum/config: {{ .Values.k2k.replicationConfig | toYaml | sha256sum }}
         {{- with .Values.k2k.otelConfig }}
         {{- if eq .metricsExporter "prometheus" }}
         prometheus.io/scrape: "true"

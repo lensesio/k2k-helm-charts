@@ -22,6 +22,13 @@ Create a default fully qualified app name.
 {{- end -}}
 {{- end -}}
 
+{{- define "lensesK2KImage" -}}
+{{- if .Values.image.tag -}}
+{{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+{{- else -}}
+{{ printf "%s:%s" .Values.image.repository .Chart.AppVersion  }}
+{{- end -}}
+{{- end -}}
 
 {{- define "k2kApp.name" -}}
 k2k-app
