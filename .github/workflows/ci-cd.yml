@@ -1,0 +1,398 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+  pull_request:
+
+env:
+  HELM_VERSION: '3.18.4'
+  KUBECTL_VERSION: '1.32.0'
+
+jobs:
+  # Job 1: Test and Package Helm Chart
+  test-and-package:
+    name: Test & Package Helm Chart
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+      actions: read
+      checks: write
+    outputs:
+      BRANCH_VERSION: ${{ steps.set-env-vars.outputs.BRANCH_VERSION }}
+      BUILD_MODE: ${{ steps.set-env-vars.outputs.BUILD_MODE }}
+    container:
+      image: alpine/helm:3.12.0
+      options: --user root
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        apk add --no-cache bash curl git jq
+
+    - name: Setup Helm plugins
+      run: |
+        helm plugin install https://github.com/quintush/helm-unittest --version master
+        helm plugin list
+
+    - name: Set environment variables
+      id: set-env-vars
+      run: |
+        # Branch version is used for private charts
+        BRANCH_VERSION=$(echo ${GITHUB_REF_NAME} \
+          | tr '[:upper:]' '[:lower:]' \
+          | sed 's/[^a-z0-9]/-/g')
+        echo "BRANCH_VERSION=$BRANCH_VERSION" | tee -a $GITHUB_ENV $GITHUB_OUTPUT
+        
+        if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+          BUILD_MODE=release
+        else
+          BUILD_MODE=development
+        fi
+        echo "BUILD_MODE=$BUILD_MODE" | tee -a $GITHUB_ENV $GITHUB_OUTPUT
+
+    - name: Set development chart version
+      if: env.BUILD_MODE == 'development'
+      run: |
+        # Keep major/minor and change patch to: `0-dev-[BRANCH_NAME]`
+        sed -i '/^version/s/[^.]*$/'"0-dev-${BRANCH_VERSION}/" ./Chart.yaml
+        cat ./Chart.yaml
+
+    - name: Run Helm tests
+      run: |
+        mkdir -p junit
+        if [ -d "./tests" ]; then
+          helm unittest \
+            -3 \
+            --output-file "junit/junit-k2k.xml" \
+            --output-type "JUnit" \
+            .
+        fi
+
+    - name: Run Helm lint
+      run: |
+        EXTRA_ARGS=""
+        if [ -f "./values.test.yaml" ]; then
+          EXTRA_ARGS="${EXTRA_ARGS} -f ./values.test.yaml"
+        fi
+        helm lint . ${EXTRA_ARGS}
+
+    - name: Build Helm dependencies
+      # No deps for now, keeping things future-proof
+      run: helm dep build .
+
+    - name: Package Helm chart
+      run: |
+        mkdir -p build
+        helm package -d build .
+        ls -la build/
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: junit/*.xml
+        retention-days: 30
+
+    - name: Upload packaged charts
+      uses: actions/upload-artifact@v4
+      with:
+        name: helm-charts
+        path: build/*.tgz
+        retention-days: 30
+
+    - name: Publish Test Results
+      uses: mikepenz/action-junit-report@v5
+      if: success() || failure()
+      with:
+        report_paths: junit/*.xml
+        detailed_summary: true
+        include_passed: true
+        check_name: Helm Unit Test Results
+
+  # Job 2: Publish to JFrog Artifactory
+  publish-to-artifactory:
+    name: Publish to JFrog Artifactory
+    needs: test-and-package
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    env:
+      JFROG_URL: ${{ vars.JFROG_URL }}
+      JFROG_PUBLIC_LENSES_HELM_CHARTS: ${{ vars.JFROG_PUBLIC_LENSES_HELM_CHARTS }}
+      JFROG_PRIVATE_LENSES_HELM_CHARTS: ${{ vars.JFROG_PRIVATE_LENSES_HELM_CHARTS }}
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download packaged charts
+      uses: actions/download-artifact@v4
+      with:
+        name: helm-charts
+        path: build/
+
+    - name: Set environment variables
+      run: |
+        echo "BRANCH_VERSION=${{ needs.test-and-package.outputs.BRANCH_VERSION}}" >> $GITHUB_ENV
+        echo "BUILD_MODE=${{ needs.test-and-package.outputs.BUILD_MODE}}" >> $GITHUB_ENV
+
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      env:
+        JF_URL: ${{ env.JFROG_URL }}
+      with:
+        oidc-provider-name: lensesiodev-github-actions
+
+    - name: Upload to public JFrog repo
+      if: env.BUILD_MODE == 'release'
+      run: |
+        cd build
+        for chart in *.tgz; do
+          jf rt u "${chart}" ${JFROG_PUBLIC_LENSES_HELM_CHARTS}/
+        done
+
+    - name: Upload to private JFrog repo
+      run: |
+        cd build
+        for chart in *.tgz; do
+          jf rt u "${chart}" ${JFROG_PRIVATE_LENSES_HELM_CHARTS}/
+        done
+
+  # Job 3: Build Static Site Assets
+  build-static-site:
+    name: Build Static Site Assets
+    needs:
+      - test-and-package
+      - publish-to-artifactory
+    runs-on: ubuntu-latest
+    container:
+      image: alpine/helm:3.12.0
+      options: --user root
+    env:
+      JFROG_URL: ${{ vars.JFROG_URL }}
+      JFROG_PUBLIC_MERGED_HELM_CHARTS: ${{ vars.JFROG_PUBLIC_MERGED_HELM_CHARTS }}
+    if: |
+      github.event_name == 'push' &&
+      needs.test-and-package.outputs.BUILD_MODE == 'release'
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: apk add --no-cache bash curl git jq
+
+    - name: Set environment variables
+      run: |
+        BRANCH_VERSION="${{ needs.test-and-package.outputs.BRANCH_VERSION }}"
+        BUILD_MODE="${{ needs.test-and-package.outputs.BUILD_MODE }}"
+        echo "BRANCH_VERSION=$BRANCH_VERSION" >> $GITHUB_ENV
+        echo "BUILD_MODE=$BUILD_MODE" >> $GITHUB_ENV
+        
+        if [[ "$BUILD_MODE" == release ]]; then
+          echo "SOURCE_HELM_REPO_URL=$JFROG_URL/artifactory/$JFROG_PUBLIC_MERGED_HELM_CHARTS/" >> $GITHUB_ENV
+          echo "TARGET_HELM_REPO_URL=https://helm.repo.lenses.io" >> $GITHUB_ENV
+        else
+          echo "Should never reached here"
+          exit 1
+        fi
+
+    - name: Setup JFrog CLI
+      uses: jfrog/setup-jfrog-cli@v4
+      env:
+        JF_URL: ${{ env.JFROG_URL }}
+      with:
+        oidc-provider-name: lensesiodev-github-actions
+
+    - name: Authenticate Helm and add Repo
+      run: |
+        jf rt ping
+        JFROG_USER=$(jf config ex | base64 -d | jq -r .user)
+        jf config ex | base64 -d | jq -r .accessToken \
+          | helm repo add ephemeral "${SOURCE_HELM_REPO_URL}" \
+                 --username $JFROG_USER --password-stdin
+
+    - name: Clone site assets
+      run: |
+        mkdir -p charts
+        cd charts
+        # Update Helm repository
+        helm repo update
+        # Copy index.yaml
+        eval "$(helm env)"
+        cp "${HELM_CACHE_HOME}/repository/ephemeral-index.yaml" index.yaml
+        # Replace URLs in index.yaml
+        sed "s|${JFROG_URL}.*/|${TARGET_HELM_REPO_URL}/|g" -i index.yaml
+        cat index.yaml
+        # Pull all chart versions
+        CHARTS="$(helm search repo ephemeral ${SEARCH_ARGS} | grep "ephemeral/" | awk '{print $1}')"
+        for chart in $CHARTS; do
+          CHART_VERSIONS="$(helm search repo "${chart}" --versions ${SEARCH_ARGS} | grep "ephemeral/" | awk '{print $2}')"
+          for version in $CHART_VERSIONS; do
+            echo "Pulling ${chart}:${version}"
+            helm pull "${chart}" --version "${version}" || echo "Pulling ${chart}:${version} FAILED!"
+          done
+        done
+        echo "=== Total files pulled: $(find . | wc -l)"
+        ls -la
+        cd ..
+        tar czf charts.tgz charts
+
+    - name: Upload static site assets
+      uses: actions/upload-artifact@v4
+      with:
+        name: static-site-assets
+        path: charts.tgz
+        retention-days: 30
+
+  # Job 4: Deploy Static Site
+  deploy-static-site:
+    name: Deploy Static Site
+    needs:
+      - test-and-package
+      - build-static-site
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_CI: ${{ vars.GCP_PROJECT_CI }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SA_ACCOUNT: ${{ vars.GCP_SA_ACCOUNT }}
+      GCP_SERVER_ZONE: ${{ vars.GCP_SERVER_ZONE }}
+      GCP_PROJECT_SERVER: ${{ vars.GCP_PROJECT_SERVER }}
+      GCP_SERVER_SSH: ${{ vars.GCP_SERVER_SSH }}
+    permissions:
+      id-token: write # for workload federation
+      contents: read
+      actions: read
+    if: |
+      github.event_name == 'push' &&
+      needs.test-and-package.outputs.BUILD_MODE == 'release'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download static site assets
+      uses: actions/download-artifact@v4
+      with:
+        name: static-site-assets
+        path: .
+
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.ANS_CI_BACKEND_01_JENKINS_SSH_KEY }}" > ~/.ssh/id_rsa
+        echo "${{ vars.ANS_CI_BACKEND_01_JENKINS_SSH_KEY_PUB }}" > ~/.ssh/id_rsa.pub
+        chmod 600 ~/.ssh/id_rsa
+
+    - name: Authenticate to Google Cloud
+      id: gcp-auth
+      uses: google-github-actions/auth@v2
+      with:
+        project_id: ${{ env.GCP_PROJECT_CI }}
+        workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        token_format: access_token
+        service_account: ${{ env.GCP_SA_ACCOUNT }}
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+
+    - name: Deploy to production website
+      run: |
+        # Remote path, we do not clean it because we only add and update files
+        REMOTE_PATH="/mnt/persistent/helm.repo.lenses.io"
+        # SSH and SCP base commands
+        SSH_COMMAND="gcloud compute ssh --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa ${GCP_SERVER_SSH}"
+        SCP_COMMAND="gcloud compute scp --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa"
+        # Create remote directory
+        $SSH_COMMAND --command="mkdir -p ${REMOTE_PATH}"
+        # Copy files
+        tar xzf charts.tgz
+        cd charts
+        $SCP_COMMAND --recurse . ${GCP_SERVER_SSH}:${REMOTE_PATH}
+        # List deployed files
+        $SSH_COMMAND --command="ls -lsa ${REMOTE_PATH}"
+
+  # Job 5: Build Docker Image
+  build-docker-image:
+    name: Build Docker Image
+    needs:
+      - test-and-package
+      - build-static-site
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_CI: ${{ vars.GCP_PROJECT_CI }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_SA_ACCOUNT: ${{ vars.GCP_SA_ACCOUNT }}
+    permissions:
+      id-token: write # for workload federation
+      contents: read
+      actions: read
+    if: |
+      github.event_name == 'push' &&
+      needs.test-and-package.outputs.BUILD_MODE == 'release'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download static site assets
+      uses: actions/download-artifact@v4
+      with:
+        name: static-site-assets
+        path: .ci/docker/
+
+    - name: Authenticate to Google Cloud
+      id: gcp-auth
+      uses: google-github-actions/auth@v2
+      with:
+        project_id: ${{ env.GCP_PROJECT_CI }}
+        workload_identity_provider: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        token_format: access_token
+        service_account: ${{ env.GCP_SA_ACCOUNT }}
+
+    - name: Login to Google Cloud Registry
+      uses: docker/login-action@v3
+      with:
+        username: oauth2accesstoken
+        password: ${{ steps.gcp-auth.outputs.access_token }}
+        registry: eu.gcr.io
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      run: |
+        # Set variables
+        BUILD_INFO="GIT_COMMIT=${GITHUB_SHA}\nGIT_BRANCH=${GITHUB_REF_NAME}"
+        DOCKER_IMAGE="eu.gcr.io/${GCP_PROJECT_CI}/lenses-helm-chart-repo:${GITHUB_SHA}"
+        # Prepare the build
+        pushd .ci/docker
+        tar xf charts.tgz
+        echo -e "${BUILD_INFO}" > build.info
+        # Build and push
+        docker buildx build \
+          --build-arg BUILD_INFO="${BUILD_INFO}" \
+          --tag "${DOCKER_IMAGE}" \
+          --push \
+          .
+        echo "Docker image built and pushed: ${DOCKER_IMAGE}"
+
+  # # Job 6: Deploy to Kubernetes via ArgoCD
+  # # TODO
+  # deploy-to-kubernetes:
+  #   name: Deploy to Kubernetes
+  #   needs: build-docker-image
+  #   runs-on: ubuntu-latest
