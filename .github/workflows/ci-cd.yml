@@ -36,7 +36,7 @@ jobs:
 
     - name: Setup Helm plugins
       run: |
-        helm plugin install https://github.com/quintush/helm-unittest --version master
+        helm plugin install https://github.com/helm-unittest/helm-unittest --version main
         helm plugin list
 
     - name: Set environment variables
@@ -67,7 +67,6 @@ jobs:
         mkdir -p junit
         if [ -d "./tests" ]; then
           helm unittest \
-            -3 \
             --output-file "junit/junit-k2k.xml" \
             --output-type "JUnit" \
             .

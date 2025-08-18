@@ -1,0 +1,222 @@
+suite: test deployment
+templates:
+  - deployment.yaml
+set:
+  k2k:
+    replicationConfig:
+      name: "k2k-test"
+      source:
+        kafka:
+          connection:
+            servers: "kafka:9092"
+      license:
+        acceptEula: true
+        token: "test-token"
+tests:
+  - it: should render deployment with default values
+    set:
+      deployment:
+        resources:
+          limits:
+            memory: "2Gi"
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: apiVersion
+          value: apps/v1
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: default
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: k2k
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: lensesio/k2k:0.1.0
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: JAVA_OPTS
+            value: "-XX:MaxRAMPercentage=85.0"
+
+  - it: should set custom replicas
+    set:
+      deployment.replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should use custom service account
+    set:
+      serviceAccount.name: my-service-account
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: my-service-account
+
+  - it: should set custom image tag
+    set:
+      image.tag: "1.2.3"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: lensesio/k2k:1.2.3
+
+  - it: should apply custom labels
+    set:
+      labels:
+        environment: production
+        team: data
+    asserts:
+      - equal:
+          path: metadata.labels.environment
+          value: production
+      - equal:
+          path: metadata.labels.team
+          value: data
+
+  - it: should apply custom annotations
+    set:
+      annotations:
+        description: "K2K deployment"
+        version: "1.0"
+    asserts:
+      - equal:
+          path: metadata.annotations.description
+          value: "K2K deployment"
+      - equal:
+          path: metadata.annotations.version
+          value: "1.0"
+
+  - it: should set node selector
+    set:
+      nodeSelector:
+        disktype: ssd
+        zone: us-west1
+    asserts:
+      - equal:
+          path: spec.template.spec.nodeSelector.disktype
+          value: ssd
+      - equal:
+          path: spec.template.spec.nodeSelector.zone
+          value: us-west1
+
+  - it: should set OTEL environment variables
+    set:
+      k2k.otelConfig:
+        serviceName: "my-k2k-service"
+        metricsExporter: "otlp"
+        prometheusPort: 8080
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_SERVICE_NAME
+            value: "my-k2k-service"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: OTEL_METRICS_EXPORTER
+            value: "otlp"
+
+  - it: should set resource requests and limits
+    set:
+      deployment.resources:
+        requests:
+          cpu: "100m"
+          memory: "512Mi"
+        limits:
+          cpu: "500m"
+          memory: "1Gi"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.cpu
+          value: "100m"
+      - equal:
+          path: spec.template.spec.containers[0].resources.requests.memory
+          value: "512Mi"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: "500m"
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: "1Gi"
+
+  - it: should enable liveness probe when configured
+    set:
+      k2k.livenessProbe.enabled: true
+      k2k.otelConfig.prometheusPort: 9090
+    asserts:
+      - isNotEmpty:
+          path: spec.template.spec.containers[0].livenessProbe
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.port
+          value: 9090
+
+  - it: should not have liveness probe when disabled
+    set:
+      k2k.livenessProbe.enabled: false
+    asserts:
+      - isNull:
+          path: spec.template.spec.containers[0].livenessProbe
+
+  - it: should mount config volume correctly
+    asserts:
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: replication-config
+            configMap:
+              name: RELEASE-NAME-k2k
+              items:
+                - key: config.yaml
+                  path: config.yaml
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: replication-config
+            mountPath: /etc/config
+
+  - it: should use default Recreate strategy when not specified
+    asserts:
+      - equal:
+          path: spec.strategy.type
+          value: "Recreate"
+
+  - it: should set JAVA_OPTS to 70% for 1Gi memory
+    set:
+      deployment.resources.limits.memory: "1Gi"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: JAVA_OPTS
+            value: "-XX:MaxRAMPercentage=70.0"
+
+  - it: should set JAVA_OPTS to 75% for 1.5Gi memory
+    set:
+      deployment.resources.limits.memory: "1536Mi"  # 1.5Gi in Mi
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: JAVA_OPTS
+            value: "-XX:MaxRAMPercentage=75.0"
+
+  - it: should set JAVA_OPTS to 85% for 3Gi memory
+    set:
+      deployment.resources.limits.memory: "3Gi"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: JAVA_OPTS
+            value: "-XX:MaxRAMPercentage=85.0"

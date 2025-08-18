@@ -1,0 +1,47 @@
+suite: test helper functions via configmap
+templates:
+  - configmap.yaml
+set:
+  k2k:
+    replicationConfig:
+      name: "helper-test"
+tests:
+  - it: should generate correct fullname with default values
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+
+  - it: should use nameOverride when specified
+    set:
+      nameOverride: custom-name
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-custom-name
+
+  - it: should use fullnameOverride when specified
+    set:
+      fullnameOverride: custom-fullname
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-fullname
+
+  - it: should use fullnameOverride even with nameOverride set
+    set:
+      nameOverride: custom-name
+      fullnameOverride: custom-fullname
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-fullname
+
+  - it: should handle release name same as chart name
+    release:
+      name: k2k
+    asserts:
+      - equal:
+          path: metadata.name
+          value: k2k
+

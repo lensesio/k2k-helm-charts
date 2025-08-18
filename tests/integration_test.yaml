@@ -1,0 +1,66 @@
+suite: integration tests - cross-resource validation
+templates:
+  - service.yaml
+  - configmap.yaml
+set:
+  service:
+    enabled: true
+  k2k:
+    replicationConfig:
+      name: "k2k-integration-test"
+      source:
+        kafka:
+          connection:
+            servers: "kafka:9092"
+      target:
+        kafka:
+          connection:
+            servers: "target:9092"
+      license:
+        acceptEula: true
+        token: "test-token"
+tests:
+  - it: should have consistent naming between service and configmap
+    asserts:
+      - template: service.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+      - template: configmap.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+
+  - it: should have consistent port configuration in service
+    asserts:
+      - template: service.yaml
+        equal:
+          path: spec.ports[0].port
+          value: 9090
+      - template: service.yaml
+        equal:
+          path: spec.ports[0].targetPort
+          value: 9090
+
+  - it: should have correct configmap name
+    asserts:
+      - template: configmap.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+
+  - it: should work with fullnameOverride across resources
+    set:
+      fullnameOverride: custom-k2k
+      k2k:
+        replicationConfig:
+          name: "test"
+    asserts:
+      - template: service.yaml
+        equal:
+          path: metadata.name
+          value: custom-k2k
+      - template: configmap.yaml
+        equal:
+          path: metadata.name
+          value: custom-k2k

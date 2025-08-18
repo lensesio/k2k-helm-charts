@@ -1,0 +1,50 @@
+k2k:
+  otelConfig:
+    serviceName: "k2k"
+    metricsExporter: "prometheus"
+    tracesExporter: "none"
+    logsExporter: "none"
+    prometheusHost: "0.0.0.0"
+    prometheusPort: 9090
+  replicationConfig:
+    name: "k2k-test-env"
+    features:
+      exactlyOnce: disabled
+      headerReplication: disabled
+      schemaMapping: disabled
+      offsetCommitOptimizePartition: enabled
+      tracingHeaders: disabled
+      autoCreateControlTopics: enabled
+      autoCreateTopics: enabled
+    license:
+      acceptEula: true
+      token: "test-license-token"
+    coordination:
+      kafka:
+        assignment:
+          topic: "__k2k-test-assignment"
+        commit:
+          topic: "__k2k-test-consumer-offsets"
+          group: "k2k.test"
+    source:
+      kafka:
+        consumer:
+          "group.id": "k2k.test"
+        connection:
+          servers: "test-kafka:9092"
+    target:
+      kafka:
+        producer: {}
+        connection:
+          servers: "target-kafka:9092"
+    replication:
+      - source:
+          name: source
+          topic:
+            - "test-topic-1"
+            - "test-topic-2"
+      - sink:
+          name: sink-source-topic
+          topic:
+            prefix: "k2k.test."
+          partition: source
