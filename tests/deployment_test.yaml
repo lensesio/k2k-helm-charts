@@ -37,9 +37,10 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].name
           value: k2k
-      - equal:
+      - matchRegex:
           path: spec.template.spec.containers[0].image
-          value: lensesio/k2k:0.1.0
+          # lensesio/k2k:[version][optional branch name when in dev]
+          pattern: ^lensesio/k2k:\d+\.\d+\.\d+.*$
       - contains:
           path: spec.template.spec.containers[0].env
           content:
