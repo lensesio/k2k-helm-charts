@@ -34,31 +34,29 @@ k2k:
       exactlyOnce: disabled
       headerReplication: disabled
       schemaMapping: disabled
-      offsetCommitOptimizePartition: enabled
+      optimizeOffsetCommitPartition: enabled
       tracingHeaders: disabled
       autoCreateControlTopics: enabled
       autoCreateTopics: enabled
+      validateControlTopicSettings : enabled
+      keepRecordCreationTimestamp : enabled
+      checkKafkaConnectionOnStartup: enabled
     license:
       acceptEula: <set to true if you accept the EULA>
       token: "<obtain the free license and copy here>"
-    coordination:
-      kafka:
-        assignment:
-          topic: "__k2k-app-eot-assignment"
-        commit:
-          topic: "__k2k-app-eot-consumer-offsets"
-          group: "k2k.eot"
     source:
       kafka:
+        common:
+          bootstrap.servers: "localhost:9092"
         consumer:
-          "group.id": "k2k.eot"
-        connection:
-          servers: "your-kafka-cluster:9092"
+          group.id: "k2k.eot"
     target:
       kafka:
-        producer:
-        connection:
-          servers: "your-kafka-cluster:9092"
+        common:
+          bootstrap.servers: "localhost:9099"
+      registry:
+        config:
+          schema.registry.url: "localhost:8081"
     replication:
       - source:
           name: source

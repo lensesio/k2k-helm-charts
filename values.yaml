@@ -90,29 +90,7 @@ image:
   # -- imagePullSecrets: # any image pull secrets for private registries go here
   #   - name: regcred
 
-# -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
-# Use it in conjuction with lenses.additionalVolumes
-# @section -- Extras
-additionalVolumeMounts: []
-  # - name: lenses-plugins
-  #   mountPath: "/data/plugins"
-
-# -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
-# @section -- Extras
-additionalVolumes: []
-  # Example usages:
-  #   Lenses: load additional plugins (UDFs) in Lenses
-  #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
-  # - name: secrets
-  #   secret:
-  #     secretName: lenses-super-secrets
-  # Note: PersistentVolumeClaim should already exist before deploying Helm chart
-  # - name: lenses-plugins
-  #   persistentVolumeClaim:
-  #     claimName: lenses-plugins
-
 k2k:
-
   # -- (object) Otel configuration section.
   # @section -- K2K OTEL configs
   otelConfig:
@@ -122,49 +100,64 @@ k2k:
     logsExporter: "none"
     prometheusHost: "0.0.0.0"
     prometheusPort: 9090
-
   # -- (object) Replication configuration for k2k. See documentation for structure.
   # @section -- K2K replication config
   replicationConfig: {}
     # Example:
-    # name: "k2k-demo-env"
-    # features:
-    #   exactlyOnce: disabled
-    #   headerReplication: disabled
-    #   schemaMapping: disabled
-    #   offsetCommitOptimizePartition: enabled
-    #   tracingHeaders: disabled
-    #   autoCreateControlTopics: enabled
-    #   autoCreateTopics: enabled
-    # coordination:
-    #   kafka:
-    #     assignment:
-    #       topic: "__k2k-app-eot-assignment"
-    #     commit:
-    #       topic: "__k2k-app-eot-consumer-offsets"
-    #       group: "k2k.eot"
-    # source:
-    #   kafka:
-    #     consumer:
-    #       "group.id": "k2k.eot"
-    #     connection:
-    #       servers: "source-kafka:9092"
-    # target:
-    #   kafka:
-    #     producer:
-    #     connection:
-    #       servers: "target-kafka:9092"
-    # replication:
-    #   - source:
-    #       name: source
-    #       topic:
-    #         - "topic1"
-    #         - "topic2"
-    #   - sink:
-    #       name: sink-source-topic
-    #       topic:
-    #         prefix: "k2k.eot."
-    #       partition: source
+    #name: "simple_pipeline"
+    #features:
+      #exactlyOnce: disabled
+      #headerReplication: disabled
+      #schemaMapping: disabled
+      #optimizeOffsetCommitPartition: enabled
+      #tracingHeaders: disabled
+      #autoCreateControlTopics: enabled
+      #autoCreateTopics: enabled
+      #validateControlTopicSettings : enabled
+      #keepRecordCreationTimestamp : enabled
+      #checkKafkaConnectionOnStartup: enabled
+    #source:
+    #  kafka:
+    #    common:
+    #      "bootstrap.servers": "localhost:9092"
+    #      "sasl.mechanism": "PLAIN"
+    #      "sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=userName password=pwd;"
+    #      "ssl.truststore.type": "JKS"
+    #      "ssl.truststore.location": "/etc/some/path"
+    #      "ssl.truststore.password": "some-password"
+    #      "security.protocol": "SASL_SSL"
+    #    consumer:
+    #      "group.id": "my-group"
+    #  registry:
+    #    config:
+    #      "schema.registry.url": "localhost:8081"
+    #      "schema.registry.ssl.truststore.type": "JSK"
+    #      "schema.registry.ssl.truststore.location": "/some/other/path"
+    #      "schema.registry.ssl.truststore.password": "some-sr-password"
+    #target:
+    #  kafka:
+    #    common:
+    #      "bootstrap.servers": "localhost:9099"
+    #      "sasl.mechanism": "PLAIN"
+    #      "sasl.jaas.config": "org.apache.kafka.common.security.plain.PlainLoginModule required username=userName password=pwd;"
+    #      "ssl.truststore.type": "JKS"
+    #      "ssl.truststore.location": "/etc/some/path"
+    #      "ssl.truststore.password": "some-password"
+    #      "security.protocol": "SASL_SSL"
+    #  registry:
+    #    config:
+    #      "schema.registry.url": "localhost:8081"
+    #      "schema.registry.ssl.truststore.type": "JSK"
+    #      "schema.registry.ssl.truststore.location": "/some/other/path"
+    #      "schema.registry.ssl.truststore.password": "some-sr-password"
+    #replication:
+    #  - source:
+    #      name: source
+    #      topic: topic.*
+    #  - sink:
+    #      topic: source
+    #      name: sink-source-topic
+    #      partition: source
     # license:
     #   acceptEula: false
     #   token: "invalid-token"
@@ -188,3 +181,24 @@ additionalPodSpec:
 # -- (list) # Optionally add arbitrary fields to the main container spec (e.g. tty, stdin, etc)
 # @section -- Extras
 additionalContainerSpec:
+
+# -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
+# Use it in conjuction with lenses.additionalVolumes
+# @section -- Extras
+additionalVolumeMounts: []
+  # - name: lenses-plugins
+  #   mountPath: "/data/plugins"
+
+# -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
+# @section -- Extras
+additionalVolumes: []
+  # Example usages:
+  #   Lenses: load additional plugins (UDFs) in Lenses
+  #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
+  # - name: secrets
+  #   secret:
+  #     secretName: lenses-super-secrets
+  # Note: PersistentVolumeClaim should already exist before deploying Helm chart
+  # - name: lenses-plugins
+  #   persistentVolumeClaim:
+  #     claimName: lenses-plugins
