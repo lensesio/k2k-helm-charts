@@ -23,7 +23,7 @@ jobs:
       BRANCH_VERSION: ${{ steps.set-env-vars.outputs.BRANCH_VERSION }}
       BUILD_MODE: ${{ steps.set-env-vars.outputs.BUILD_MODE }}
     container:
-      image: alpine/helm:3.12.0
+      image: alpine/helm:3.18.0
       options: --user root
 
     steps:
@@ -47,7 +47,7 @@ jobs:
           | tr '[:upper:]' '[:lower:]' \
           | sed 's/[^a-z0-9]/-/g')
         echo "BRANCH_VERSION=$BRANCH_VERSION" | tee -a $GITHUB_ENV $GITHUB_OUTPUT
-        
+
         if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
           BUILD_MODE=release
         else
@@ -174,7 +174,7 @@ jobs:
       - publish-to-artifactory
     runs-on: ubuntu-latest
     container:
-      image: alpine/helm:3.12.0
+      image: alpine/helm:3.18.0
       options: --user root
     env:
       JFROG_URL: ${{ vars.JFROG_URL }}
@@ -200,7 +200,7 @@ jobs:
         BUILD_MODE="${{ needs.test-and-package.outputs.BUILD_MODE }}"
         echo "BRANCH_VERSION=$BRANCH_VERSION" >> $GITHUB_ENV
         echo "BUILD_MODE=$BUILD_MODE" >> $GITHUB_ENV
-        
+
         if [[ "$BUILD_MODE" == release ]]; then
           echo "SOURCE_HELM_REPO_URL=$JFROG_URL/artifactory/$JFROG_PUBLIC_MERGED_HELM_CHARTS/" >> $GITHUB_ENV
           echo "TARGET_HELM_REPO_URL=https://helm.repo.lenses.io" >> $GITHUB_ENV
