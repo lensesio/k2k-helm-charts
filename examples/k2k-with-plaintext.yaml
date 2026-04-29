@@ -1,26 +1,21 @@
-service:
-  # -- (bool) Deciding factor whether Lenses K2K service will be created and which type
-  # @section -- Lenses K2K deployment service values
-  enabled: true
-  type: ClusterIP
-
-deployment:
-  replicas: 1
-  #  Resource management
-  # -- Pod resources
-  # @section -- Custom deployment values
-  resources:
-    requests:
-    #   cpu: 1
-      memory: 500Mi
-    limits:
-    #   cpu: 2
-      memory: 1Gi
-
-image:
-  repository: lensesio/k2k
-
 k2k:
+  service:
+    enabled: true
+    type: ClusterIP
+
+  deployment:
+    replicas: 1
+    resources:
+      requests:
+      #   cpu: 1
+        memory: 500Mi
+      limits:
+      #   cpu: 2
+        memory: 1Gi
+
+  image:
+    repository: lensesio/k2k
+
   otelConfig:
     serviceName: "k2k"
     metricsExporter: "prometheus"
@@ -28,6 +23,7 @@ k2k:
     logsExporter: "none"
     prometheusHost: "0.0.0.0"
 #    prometheusPort: "9090"
+
   replicationConfig:
     name: "k2k-demo-env"
     features:

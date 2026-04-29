@@ -1,0 +1,15 @@
+{{- if and .Values.offsetMapper.enabled .Values.offsetMapper.overrideConfig }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "offsetMapper.fullname" . | quote }}
+  labels:
+    app: {{ include "offsetMapper.fullname" . }}
+    {{- include "commonLabels" . | nindent 4 }}
+    component: "k2k-offset-mapper"
+    lenses.io/app: {{ include "offsetMapper.fullname" . }}
+    lenses.io/app.type: k2k-offset-mapper-configmap
+data:
+  override.yaml: |-
+{{ .Values.offsetMapper.overrideConfig | toYaml | indent 4 }}
+{{- end }}

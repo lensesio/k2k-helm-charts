@@ -3,9 +3,9 @@ templates:
   - service.yaml
   - configmap.yaml
 set:
-  service:
-    enabled: true
   k2k:
+    service:
+      enabled: true
     replicationConfig:
       name: "k2k-integration-test"
       source:

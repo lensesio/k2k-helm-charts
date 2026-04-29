@@ -22,18 +22,55 @@ Create a default fully qualified app name.
 {{- end -}}
 {{- end -}}
 
-{{- define "lensesK2KImage" -}}
-{{- if .Values.image.tag -}}
-{{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+{{/*
+Offset mapper fully qualified name.
+Truncate the base name to 48 chars (63 - len("-offset-mapper")) so the suffix
+is never silently stripped, which would cause name collisions with the k2k resources.
+*/}}
+{{- define "offsetMapper.fullname" -}}
+{{- printf "%s-offset-mapper" (include "fullname" . | trunc 48 | trimSuffix "-") -}}
+{{- end -}}
+
+{{/*
+K2K image reference.
+If tag is set explicitly, use repository:tag.
+If repository already contains a colon (embedded tag), use it as-is.
+Otherwise fall back to repository:appVersion.
+*/}}
+{{- define "k2k.image" -}}
+{{- if .Values.k2k.image.tag -}}
+{{- printf "%s:%s" .Values.k2k.image.repository .Values.k2k.image.tag -}}
+{{- else if contains ":" .Values.k2k.image.repository -}}
+{{- .Values.k2k.image.repository -}}
 {{- else -}}
-{{ printf "%s:%s" .Values.image.repository .Chart.AppVersion  }}
+{{- printf "%s:%s" .Values.k2k.image.repository .Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
 
-{{- define "k2kApp.name" -}}
-k2k-app
+{{/*
+Offset mapper image reference.
+If tag is set explicitly, use repository:tag.
+If repository already contains a colon (embedded tag), use it as-is.
+Otherwise fall back to repository:appVersion.
+*/}}
+{{- define "offsetMapper.image" -}}
+{{- if .Values.offsetMapper.image.tag -}}
+{{- printf "%s:%s" .Values.offsetMapper.image.repository .Values.offsetMapper.image.tag -}}
+{{- else if contains ":" .Values.offsetMapper.image.repository -}}
+{{- .Values.offsetMapper.image.repository -}}
+{{- else -}}
+{{- printf "%s:%s" .Values.offsetMapper.image.repository .Chart.AppVersion -}}
+{{- end -}}
 {{- end -}}
 
-{{- define "k2kApp.fullname" -}}
-{{ .Release.Name }}-k2k-app
+{{/*
+Common labels applied to all resources.
+*/}}
+{{- define "commonLabels" -}}
+chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
+release: {{ .Release.Name }}
+heritage: {{ .Release.Service }}
+{{- if .Values.commonLabels }}
+{{ toYaml .Values.commonLabels }}
+{{- end }}
 {{- end -}}

@@ -1,31 +1,35 @@
+{{- if and .Values.offsetMapper.enabled (not (and .Values.k2k.replicationConfig.features (eq .Values.k2k.replicationConfig.features.offsetMapping "enabled"))) -}}
+  {{- fail "offsetMapper.enabled is true but k2k.replicationConfig.features.offsetMapping is not set to \"enabled\". Both must be configured together." -}}
+{{- end -}}
+{{- if and (not .Values.offsetMapper.enabled) .Values.k2k.replicationConfig.features (eq .Values.k2k.replicationConfig.features.offsetMapping "enabled") -}}
+  {{- fail "k2k.replicationConfig.features.offsetMapping is \"enabled\" but offsetMapper.enabled is not true. Both must be configured together." -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{include "fullname" . | quote}}
   labels:
     app: {{include "fullname" . | quote}}
-    chart: {{printf "%s-%s" .Chart.Name .Chart.Version}}
-    release: {{.Release.Name}}
-    heritage: {{.Release.Service}}
+    {{- include "commonLabels" . | nindent 4 }}
     component: "k2k"
     lenses.io/app: {{include "fullname" .}}
     lenses.io/app.type: k2k-deployment
-    {{- range $key, $value := .Values.labels }}
+    {{- range $key, $value := .Values.k2k.labels }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-  {{- if .Values.annotations }}
+  {{- if .Values.k2k.annotations }}
   annotations:
-    {{- range $key, $value := .Values.annotations }}
+    {{- range $key, $value := .Values.k2k.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
   {{- end }}
 spec:
-  replicas: {{ .Values.deployment.replicas }}
+  replicas: {{ .Values.k2k.deployment.replicas }}
   selector:
     matchLabels:
       app: {{include "fullname" . | quote}}
   strategy:
-    type: {{ default "Recreate" .Values.strategy.type | quote }}
+    type: {{ default "Recreate" .Values.k2k.strategy.type | quote }}
   template:
     metadata:
       labels:
@@ -40,50 +44,50 @@ spec:
         prometheus.io/path: "/metrics"
         {{- end }}
         {{- end }}
-        {{- range $key, $value := .Values.podTemplateAnnotations }}
+        {{- range $key, $value := .Values.k2k.podTemplateAnnotations }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
     spec:
-      serviceAccountName: {{ .Values.serviceAccount.name }}
-      {{- if .Values.image.imagePullSecrets }}
-      imagePullSecrets: {{ .Values.image.imagePullSecrets | toYaml | nindent 8 }}
+      serviceAccountName: {{ .Values.k2k.serviceAccount.name }}
+      {{- if .Values.k2k.image.imagePullSecrets }}
+      imagePullSecrets: {{ .Values.k2k.image.imagePullSecrets | toYaml | nindent 8 }}
       {{- end }}
-      {{- if .Values.nodeSelector }}
+      {{- if .Values.k2k.nodeSelector }}
       nodeSelector:
-        {{- toYaml .Values.nodeSelector | nindent 8 }}
+        {{- toYaml .Values.k2k.nodeSelector | nindent 8 }}
       {{- end }}
-      {{- if .Values.affinity }}
+      {{- if .Values.k2k.affinity }}
       affinity:
-        {{- toYaml .Values.affinity | nindent 8 }}
+        {{- toYaml .Values.k2k.affinity | nindent 8 }}
       {{- end }}
-      {{- if .Values.tolerations }}
+      {{- if .Values.k2k.tolerations }}
       tolerations:
-        {{- toYaml .Values.tolerations | nindent 8 }}
+        {{- toYaml .Values.k2k.tolerations | nindent 8 }}
       {{- end }}
-      {{- if .Values.securityContext }}
+      {{- if .Values.k2k.securityContext }}
       securityContext:
-        {{- toYaml .Values.securityContext | nindent 8 }}
+        {{- toYaml .Values.k2k.securityContext | nindent 8 }}
       {{- end }}
-      {{- if .Values.dnsPolicy }}
-      dnsPolicy: {{ .Values.dnsPolicy }}
+      {{- if .Values.k2k.dnsPolicy }}
+      dnsPolicy: {{ .Values.k2k.dnsPolicy }}
       {{- end }}
-      {{- if .Values.dnsConfig }}
+      {{- if .Values.k2k.dnsConfig }}
       dnsConfig:
-        {{- toYaml .Values.dnsConfig | nindent 8 }}
+        {{- toYaml .Values.k2k.dnsConfig | nindent 8 }}
       {{- end }}
-      {{- if .Values.additionalPodSpec }}
-      {{- toYaml .Values.additionalPodSpec | nindent 6 }}
+      {{- if .Values.k2k.additionalPodSpec }}
+      {{- toYaml .Values.k2k.additionalPodSpec | nindent 6 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          image: {{ include "lensesK2KImage" . | quote }}
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          {{- if .Values.additionalContainerSpec }}
-          {{- toYaml .Values.additionalContainerSpec | nindent 8 }}
+          image: {{ include "k2k.image" . | quote }}
+          imagePullPolicy: {{ .Values.k2k.image.pullPolicy }}
+          {{- if .Values.k2k.additionalContainerSpec }}
+          {{- toYaml .Values.k2k.additionalContainerSpec | nindent 8 }}
           {{- end }}
-          {{- if .Values.containerSecurityContext }}
+          {{- if .Values.k2k.containerSecurityContext }}
           securityContext:
-            {{- toYaml .Values.containerSecurityContext | nindent 10 }}
+            {{- toYaml .Values.k2k.containerSecurityContext | nindent 10 }}
           {{- end }}
           ports:
             - containerPort: {{ .Values.k2k.otelConfig.prometheusPort }}
@@ -119,7 +123,7 @@ spec:
             - name: OTEL_EXPORTER_PROMETHEUS_PORT
               value: "{{ .Values.k2k.otelConfig.prometheusPort }}"
             {{- $defaultMemoryLimit := "2Gi" }}
-            {{- $memoryLimit := .Values.deployment.resources.limits.memory | default $defaultMemoryLimit }}
+            {{- $memoryLimit := .Values.k2k.deployment.resources.limits.memory | default $defaultMemoryLimit }}
             {{- $memoryBytes := 0 }}
             {{- if hasSuffix "Gi" $memoryLimit }}
               {{- $memoryBytes = mulf (trimSuffix "Gi" $memoryLimit | float64) 1073741824 }}
@@ -146,23 +150,25 @@ spec:
             - name: JAVA_OPTS
               value: "-XX:MaxRAMPercentage=85.0"
             {{- end }}
-              # Additional env variables
             {{- if .Values.k2k.additionalEnv }}
             {{- toYaml .Values.k2k.additionalEnv | nindent 12 }}
             {{- end }}
           resources:
             requests:
-              cpu: {{ .Values.deployment.resources.requests.cpu | default "500m" }}
-              memory: {{ .Values.deployment.resources.requests.memory | default "1Gi" }}
+              cpu: {{ .Values.k2k.deployment.resources.requests.cpu | default "500m" }}
+              memory: {{ .Values.k2k.deployment.resources.requests.memory | default "1Gi" }}
             limits:
-              cpu: {{ .Values.deployment.resources.limits.cpu | default "1" }}
-              memory: {{ .Values.deployment.resources.limits.memory | default $defaultMemoryLimit }}
+              cpu: {{ .Values.k2k.deployment.resources.limits.cpu | default "1" }}
+              memory: {{ .Values.k2k.deployment.resources.limits.memory | default $defaultMemoryLimit }}
           volumeMounts:
             - name: replication-config
               mountPath: /etc/config
-            {{- if .Values.additionalVolumeMounts }}
-            {{- toYaml .Values.additionalVolumeMounts | nindent 12 }}
+            {{- if .Values.k2k.additionalVolumeMounts }}
+            {{- toYaml .Values.k2k.additionalVolumeMounts | nindent 12 }}
             {{- end }}
+        {{- if .Values.k2k.sidecarContainers }}
+        {{- toYaml .Values.k2k.sidecarContainers | nindent 8 }}
+        {{- end }}
       volumes:
         - name: replication-config
           configMap:
@@ -170,15 +176,11 @@ spec:
             items:
               - key: config.yaml
                 path: config.yaml
-        {{- if .Values.additionalVolumes }}
-        {{- toYaml .Values.additionalVolumes | nindent 8 }}
+        {{- if .Values.k2k.additionalVolumes }}
+        {{- toYaml .Values.k2k.additionalVolumes | nindent 8 }}
         {{- end }}
 
-      {{- if .Values.sidecarContainers }}
-      {{- toYaml .Values.sidecarContainers | nindent 6 }}
-      {{- end }}
-
-      {{- if .Values.initContainers }}
+      {{- if .Values.k2k.initContainers }}
       initContainers:
-      {{- toYaml .Values.initContainers | nindent 6 }}
+      {{- toYaml .Values.k2k.initContainers | nindent 6 }}
       {{- end }}

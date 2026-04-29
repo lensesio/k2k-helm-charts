@@ -1,0 +1,199 @@
+{{- if .Values.offsetMapper.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "offsetMapper.fullname" . | quote }}
+  labels:
+    app: {{ include "offsetMapper.fullname" . | quote }}
+    {{- include "commonLabels" . | nindent 4 }}
+    component: "k2k-offset-mapper"
+    lenses.io/app: {{ include "offsetMapper.fullname" . }}
+    lenses.io/app.type: k2k-offset-mapper-deployment
+    {{- range $key, $value := .Values.offsetMapper.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- if .Values.offsetMapper.annotations }}
+  annotations:
+    {{- range $key, $value := .Values.offsetMapper.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.offsetMapper.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "offsetMapper.fullname" . | quote }}
+  strategy:
+    type: {{ default "Recreate" .Values.offsetMapper.strategy.type | quote }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "offsetMapper.fullname" . | quote }}
+        component: "k2k-offset-mapper"
+      annotations:
+        checksum/base-config: {{ .Values.k2k.replicationConfig | toYaml | sha256sum }}
+        {{- if .Values.offsetMapper.overrideConfig }}
+        checksum/override-config: {{ .Values.offsetMapper.overrideConfig | toYaml | sha256sum }}
+        {{- end }}
+        {{- with .Values.offsetMapper.otelConfig }}
+        {{- if eq .metricsExporter "prometheus" }}
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .prometheusPort }}"
+        prometheus.io/path: "/metrics"
+        {{- end }}
+        {{- end }}
+        {{- range $key, $value := .Values.offsetMapper.podTemplateAnnotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ .Values.offsetMapper.serviceAccount.name }}
+      {{- if .Values.offsetMapper.image.imagePullSecrets }}
+      imagePullSecrets: {{ .Values.offsetMapper.image.imagePullSecrets | toYaml | nindent 8 }}
+      {{- end }}
+      {{- if .Values.offsetMapper.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.offsetMapper.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.offsetMapper.affinity }}
+      affinity:
+        {{- toYaml .Values.offsetMapper.affinity | nindent 8 }}
+      {{- end }}
+      {{- if .Values.offsetMapper.tolerations }}
+      tolerations:
+        {{- toYaml .Values.offsetMapper.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.offsetMapper.securityContext }}
+      securityContext:
+        {{- toYaml .Values.offsetMapper.securityContext | nindent 8 }}
+      {{- end }}
+      {{- if .Values.offsetMapper.dnsPolicy }}
+      dnsPolicy: {{ .Values.offsetMapper.dnsPolicy }}
+      {{- end }}
+      {{- if .Values.offsetMapper.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.offsetMapper.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.offsetMapper.additionalPodSpec }}
+      {{- toYaml .Values.offsetMapper.additionalPodSpec | nindent 6 }}
+      {{- end }}
+      containers:
+        - name: k2k-offset-mapping
+          image: {{ include "offsetMapper.image" . | quote }}
+          imagePullPolicy: {{ .Values.offsetMapper.image.pullPolicy }}
+          {{- if .Values.offsetMapper.additionalContainerSpec }}
+          {{- toYaml .Values.offsetMapper.additionalContainerSpec | nindent 8 }}
+          {{- end }}
+          {{- if .Values.offsetMapper.containerSecurityContext }}
+          securityContext:
+            {{- toYaml .Values.offsetMapper.containerSecurityContext | nindent 10 }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.offsetMapper.otelConfig.prometheusPort }}
+          {{- if .Values.offsetMapper.livenessProbe.enabled }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.offsetMapper.otelConfig.prometheusPort }}
+            initialDelaySeconds: 300
+            periodSeconds: 10
+          {{- end }}
+          command:
+            - k2k-offset-mapping
+            - start
+            - -f
+            - /etc/config/base/config.yaml
+            {{- if .Values.offsetMapper.overrideConfig }}
+            - -f
+            - /etc/config/override/override.yaml
+            {{- end }}
+            - -g
+            - enabled
+            - -t
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "{{ .Values.offsetMapper.otelConfig.serviceName }}"
+            - name: OTEL_METRICS_EXPORTER
+              value: "{{ .Values.offsetMapper.otelConfig.metricsExporter }}"
+            - name: OTEL_TRACES_EXPORTER
+              value: "{{ .Values.offsetMapper.otelConfig.tracesExporter }}"
+            - name: OTEL_LOGS_EXPORTER
+              value: "{{ .Values.offsetMapper.otelConfig.logsExporter }}"
+            - name: OTEL_EXPORTER_PROMETHEUS_HOST
+              value: "{{ .Values.offsetMapper.otelConfig.prometheusHost }}"
+            - name: OTEL_EXPORTER_PROMETHEUS_PORT
+              value: "{{ .Values.offsetMapper.otelConfig.prometheusPort }}"
+            {{- $defaultMemoryLimit := "2Gi" }}
+            {{- $memoryLimit := .Values.offsetMapper.deployment.resources.limits.memory | default $defaultMemoryLimit }}
+            {{- $memoryBytes := 0 }}
+            {{- if hasSuffix "Gi" $memoryLimit }}
+              {{- $memoryBytes = mulf (trimSuffix "Gi" $memoryLimit | float64) 1073741824 }}
+            {{- else if hasSuffix "G" $memoryLimit }}
+              {{- $memoryBytes = mulf (trimSuffix "G" $memoryLimit | float64) 1000000000 }}
+            {{- else if hasSuffix "Mi" $memoryLimit }}
+              {{- $memoryBytes = mulf (trimSuffix "Mi" $memoryLimit | float64) 1048576 }}
+            {{- else if hasSuffix "M" $memoryLimit }}
+              {{- $memoryBytes = mulf (trimSuffix "M" $memoryLimit | float64) 1000000 }}
+            {{- else if hasSuffix "Ki" $memoryLimit }}
+              {{- $memoryBytes = mulf (trimSuffix "Ki" $memoryLimit | float64) 1024 }}
+            {{- else if hasSuffix "K" $memoryLimit }}
+              {{- $memoryBytes = mulf (trimSuffix "K" $memoryLimit | float64) 1000 }}
+            {{- else }}
+              {{- $memoryBytes = $memoryLimit | float64 }}
+            {{- end }}
+            {{- if le $memoryBytes 1073741824.0 }}
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=70.0"
+            {{- else if le $memoryBytes 1610612736.0 }}
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=75.0"
+            {{- else }}
+            - name: JAVA_OPTS
+              value: "-XX:MaxRAMPercentage=85.0"
+            {{- end }}
+            {{- if .Values.offsetMapper.additionalEnv }}
+            {{- toYaml .Values.offsetMapper.additionalEnv | nindent 12 }}
+            {{- end }}
+          resources:
+            requests:
+              cpu: {{ .Values.offsetMapper.deployment.resources.requests.cpu | default "500m" }}
+              memory: {{ .Values.offsetMapper.deployment.resources.requests.memory | default "1Gi" }}
+            limits:
+              cpu: {{ .Values.offsetMapper.deployment.resources.limits.cpu | default "1" }}
+              memory: {{ .Values.offsetMapper.deployment.resources.limits.memory | default $defaultMemoryLimit }}
+          volumeMounts:
+            - name: base-config
+              mountPath: /etc/config/base
+            {{- if .Values.offsetMapper.overrideConfig }}
+            - name: override-config
+              mountPath: /etc/config/override
+            {{- end }}
+            {{- if .Values.offsetMapper.additionalVolumeMounts }}
+            {{- toYaml .Values.offsetMapper.additionalVolumeMounts | nindent 12 }}
+            {{- end }}
+        {{- if .Values.offsetMapper.sidecarContainers }}
+        {{- toYaml .Values.offsetMapper.sidecarContainers | nindent 8 }}
+        {{- end }}
+      volumes:
+        - name: base-config
+          configMap:
+            name: {{ include "fullname" . | quote }}
+            items:
+              - key: config.yaml
+                path: config.yaml
+        {{- if .Values.offsetMapper.overrideConfig }}
+        - name: override-config
+          configMap:
+            name: {{ include "offsetMapper.fullname" . | quote }}
+            items:
+              - key: override.yaml
+                path: override.yaml
+        {{- end }}
+        {{- if .Values.offsetMapper.additionalVolumes }}
+        {{- toYaml .Values.offsetMapper.additionalVolumes | nindent 8 }}
+        {{- end }}
+
+      {{- if .Values.offsetMapper.initContainers }}
+      initContainers:
+      {{- toYaml .Values.offsetMapper.initContainers | nindent 6 }}
+      {{- end }}
+{{- end }}

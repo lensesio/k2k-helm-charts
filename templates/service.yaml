@@ -1,25 +1,25 @@
-{{ if .Values.service.enabled -}}
+{{ if .Values.k2k.service.enabled -}}
 apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "fullname" . }}
   labels:
     app: {{ include "fullname" . }}
-    chart: {{.Chart.Name}}-{{ .Chart.Version }}
-    component: "lenses-kafka2kafka"
-    heritage: {{ .Release.Service }}
-    release: {{ .Release.Name }}
+    {{- include "commonLabels" . | nindent 4 }}
+    component: "k2k"
     lenses.io/app: {{ include "fullname" . }}
     lenses.io/app.type: k2k-service
-    {{- range $key, $value := .Values.labels }}
+    {{- range $key, $value := .Values.k2k.labels }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-{{- if .Values.service.annotations }}
+{{- if .Values.k2k.service.annotations }}
   annotations:
-    {{- toYaml .Values.service.annotations | nindent 4 }}
+    {{- toYaml .Values.k2k.service.annotations | nindent 4 }}
 {{- end }}
 spec:
-  type: {{ .Values.service.type | quote }}
+  type: {{ .Values.k2k.service.type | quote }}
+  selector:
+    app: {{ include "fullname" . | quote }}
   ports:
     - protocol: TCP
       port: {{ .Values.k2k.otelConfig.prometheusPort }}

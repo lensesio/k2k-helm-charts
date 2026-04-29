@@ -1,96 +1,98 @@
 nameOverride: ""
 fullnameOverride: ""
-# -- (dict) Custom deployment annotations
-# @section -- Custom deployment values
-annotations: {}
-# -- (dict) Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations.
-# @section -- Custom deployment values
-podTemplateAnnotations: {}
-# -- (dict) Deployment labels
-# @section -- Custom deployment values
-labels: {}
-# -- (dict) Deployment strategy
-# @section -- Custom deployment values
-strategy: {}
-# -- (dict) Deployment nodeSelector
-# @section -- Custom deployment values
-nodeSelector: {}
-# -- (dict) Deployment tolerations
-# @section -- Custom deployment values
-tolerations: []
-# -- (dict) Deployment affinity rules
-# @section -- Custom deployment values
-affinity: {}
-# -- (dict) Deployment security context
-# @section -- Custom deployment values
-securityContext: {}
-# dnsPolicy: "None" # Optional dnsPolicy and dnsConfig to put into the Deployment's PodTemplateSpec.
-# dnsConfig:
-#   nameservers:
-#     - 1.1.1.1
-# containerSecurityContext: # Optional, plugged in into the both the deployment's main app container and the sidecar.
-#   allowPrivilegeEscalation: false
 
-
-# @section -- Lenses K2K deployment service values
-service:
-  # -- (bool) Deciding factor whether Lenses K2K service will be created and which type
-  # @section -- Lenses K2K deployment service values
-  enabled: true
-
-  # -- (string) Type of service to be created.
-  # @section -- Lenses K2K deployment service values
-  type: ClusterIP
-
-  # -- (dict) Additional service annotations
-  # @section -- Lenses K2K deployment service values
-  annotations: {}
-
-
-# -- User to be used by Lenses to deploy apps
-# @section -- Permission scope values
-serviceAccount:
-  # -- (bool) In case "true" new SA will be created with service.name as a SA name.
-  # @section -- Permission scope values
-  create: false
-
-  # -- (string) Name of Service Account. In case serviceAccount.create is *false*, existing SA with defined name here will be used.
-  # @section -- Permission scope values
-  name: default
-
-  # -- (dict) Additional service account annotations.
-  # @section -- Permission scope values
-  annotations: {}
-
-#  Resource management
-# -- Pod resources
-# @section -- Custom deployment values
-deployment:
-  replicas: 1
-  resources:
-    requests:
-    #   cpu: 1
-      memory: 1Gi
-    limits:
-    #   cpu: 2
-      memory: 1Gi
-
-# -- Image map
-# @section -- Custom deployment values
-image:
-  # -- Image repository
-  # @section -- Custom deployment values
-  repository: lensesio/k2k
-
-  # -- Default to .Chart.AppVersion
-  # tag:
-  # -- Image pullPolicy
-  # @section -- Custom deployment values
-  pullPolicy: IfNotPresent
-  # -- imagePullSecrets: # any image pull secrets for private registries go here
-  #   - name: regcred
+# -- (dict) Common labels applied to all resources (k2k and offset mapper)
+commonLabels: {}
 
 k2k:
+  # -- (dict) Custom deployment annotations
+  # @section -- K2K deployment values
+  annotations: {}
+  # -- (dict) Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations.
+  # @section -- K2K deployment values
+  podTemplateAnnotations: {}
+  # -- (dict) Deployment labels
+  # @section -- K2K deployment values
+  labels: {}
+  # -- (dict) Deployment strategy
+  # @section -- K2K deployment values
+  strategy: {}
+  # -- (dict) Deployment nodeSelector
+  # @section -- K2K deployment values
+  nodeSelector: {}
+  # -- (dict) Deployment tolerations
+  # @section -- K2K deployment values
+  tolerations: []
+  # -- (dict) Deployment affinity rules
+  # @section -- K2K deployment values
+  affinity: {}
+  # -- (dict) Deployment security context
+  # @section -- K2K deployment values
+  securityContext: {}
+  # dnsPolicy: "None"
+  # dnsConfig:
+  #   nameservers:
+  #     - 1.1.1.1
+  # containerSecurityContext:
+  #   allowPrivilegeEscalation: false
+
+  # @section -- K2K deployment service values
+  service:
+    # -- (bool) Deciding factor whether K2K service will be created and which type
+    # @section -- K2K deployment service values
+    enabled: true
+
+    # -- (string) Type of service to be created.
+    # @section -- K2K deployment service values
+    type: ClusterIP
+
+    # -- (dict) Additional service annotations
+    # @section -- K2K deployment service values
+    annotations: {}
+
+  # -- User to be used by K2K to deploy apps
+  # @section -- K2K permission scope values
+  serviceAccount:
+    # -- (bool) In case "true" new SA will be created with service.name as a SA name.
+    # @section -- K2K permission scope values
+    create: false
+
+    # -- (string) Name of Service Account. In case serviceAccount.create is *false*, existing SA with defined name here will be used.
+    # @section -- K2K permission scope values
+    name: default
+
+    # -- (dict) Additional service account annotations.
+    # @section -- K2K permission scope values
+    annotations: {}
+
+  # -- Pod resources
+  # @section -- K2K deployment values
+  deployment:
+    replicas: 1
+    resources:
+      requests:
+      #   cpu: 1
+        memory: 1Gi
+      limits:
+      #   cpu: 2
+        memory: 1Gi
+
+  # -- Image map
+  # @section -- K2K deployment values
+  image:
+    # -- Image repository
+    # @section -- K2K deployment values
+    repository: lensesio/k2k
+    tag: "2.0"
+
+    # -- Default to .Chart.AppVersion
+    # tag:
+    # -- Image pullPolicy
+    # @section -- K2K deployment values
+    pullPolicy: IfNotPresent
+    # -- imagePullSecrets: # any image pull secrets for private registries go here
+    #   - name: regcred
+
   # -- (object) Otel configuration section.
   # @section -- K2K OTEL configs
   otelConfig:
@@ -100,6 +102,7 @@ k2k:
     logsExporter: "none"
     prometheusHost: "0.0.0.0"
     prometheusPort: 9090
+
   # -- (object) Replication configuration for k2k. See documentation for structure.
   # @section -- K2K replication config
   replicationConfig: {}
@@ -163,42 +166,169 @@ k2k:
     #   token: "invalid-token"
 
   # -- (list) Additional env variables appended to deployment
-  # @section -- Custom deployment values
-  # Additional env variables appended to deployment
-  additionalEnv:
+  # @section -- K2K deployment values
+  additionalEnv: []
     # - name: FOO
     #   value: bar
 
   # -- (string) Disables livenessProbe, used while debugging
-  # @section -- Extras
+  # @section -- K2K extras
   livenessProbe:
     enabled: false
 
-# -- (list) Optionally add arbitrary fields to the pod spec (e.g. priorityClassName, priority, etc)
-# @section -- Extras
-additionalPodSpec:
+  # -- (object) Optionally add arbitrary fields to the pod spec (e.g. priorityClassName, priority, etc)
+  # @section -- K2K extras
+  additionalPodSpec:
 
-# -- (list) # Optionally add arbitrary fields to the main container spec (e.g. tty, stdin, etc)
-# @section -- Extras
-additionalContainerSpec:
+  # -- (object) Optionally add arbitrary fields to the main container spec (e.g. tty, stdin, etc)
+  # @section -- K2K extras
+  additionalContainerSpec:
 
-# -- (list) Additional volume mounts to use in Lenses delpoyments, for example to load additional plugins (UDFs) in Lenses
-# Use it in conjuction with lenses.additionalVolumes
-# @section -- Extras
-additionalVolumeMounts: []
-  # - name: lenses-plugins
-  #   mountPath: "/data/plugins"
+  # -- (list) Additional volume mounts
+  # @section -- K2K extras
+  additionalVolumeMounts: []
+    # - name: lenses-plugins
+    #   mountPath: "/data/plugins"
 
-# -- (list) Additional volumes to use in Lenses delpoyments either by Lenses for other sidecars like Lenses provisioner.
-# @section -- Extras
-additionalVolumes: []
-  # Example usages:
-  #   Lenses: load additional plugins (UDFs) in Lenses
-  #   Lenses provisioner: load additional files from pre-existing volumes, secrets or vault secrets to use in provisioning
-  # - name: secrets
-  #   secret:
-  #     secretName: lenses-super-secrets
-  # Note: PersistentVolumeClaim should already exist before deploying Helm chart
-  # - name: lenses-plugins
-  #   persistentVolumeClaim:
-  #     claimName: lenses-plugins
+  # -- (list) Additional volumes
+  # @section -- K2K extras
+  additionalVolumes: []
+    # - name: secrets
+    #   secret:
+    #     secretName: lenses-super-secrets
+    # - name: lenses-plugins
+    #   persistentVolumeClaim:
+    #     claimName: lenses-plugins
+
+offsetMapper:
+  # -- (bool) Enable the K2K Offset Mapper deployment
+  # @section -- Offset Mapper values
+  enabled: false
+
+  # -- (dict) Custom deployment annotations
+  # @section -- Offset Mapper deployment values
+  annotations: {}
+  # -- (dict) Annotations here go into the PodTemplateSpec at deployment.spec.template.annotations.
+  # @section -- Offset Mapper deployment values
+  podTemplateAnnotations: {}
+  # -- (dict) Deployment labels
+  # @section -- Offset Mapper deployment values
+  labels: {}
+  # -- (dict) Deployment strategy
+  # @section -- Offset Mapper deployment values
+  strategy: {}
+  # -- (dict) Deployment nodeSelector
+  # @section -- Offset Mapper deployment values
+  nodeSelector: {}
+  # -- (dict) Deployment tolerations
+  # @section -- Offset Mapper deployment values
+  tolerations: []
+  # -- (dict) Deployment affinity rules
+  # @section -- Offset Mapper deployment values
+  affinity: {}
+  # -- (dict) Deployment security context
+  # @section -- Offset Mapper deployment values
+  securityContext: {}
+  # dnsPolicy: "None"
+  # dnsConfig:
+  #   nameservers:
+  #     - 1.1.1.1
+  # containerSecurityContext:
+  #   allowPrivilegeEscalation: false
+
+  # @section -- Offset Mapper service values
+  service:
+    # -- (bool) Deciding factor whether Offset Mapper service will be created and which type
+    # @section -- Offset Mapper service values
+    enabled: true
+
+    # -- (string) Type of service to be created.
+    # @section -- Offset Mapper service values
+    type: ClusterIP
+
+    # -- (dict) Additional service annotations
+    # @section -- Offset Mapper service values
+    annotations: {}
+
+  # @section -- Offset Mapper permission scope values
+  serviceAccount:
+    # -- (bool) In case "true" new SA will be created.
+    # @section -- Offset Mapper permission scope values
+    create: false
+
+    # -- (string) Name of Service Account. In case serviceAccount.create is *false*, existing SA with defined name here will be used.
+    # @section -- Offset Mapper permission scope values
+    name: default
+
+    # -- (dict) Additional service account annotations.
+    # @section -- Offset Mapper permission scope values
+    annotations: {}
+
+  # -- Pod resources
+  # @section -- Offset Mapper deployment values
+  deployment:
+    replicas: 1
+    resources:
+      requests:
+      #   cpu: 1
+        memory: 1Gi
+      limits:
+      #   cpu: 2
+        memory: 1Gi
+
+  # -- Image map
+  # @section -- Offset Mapper deployment values
+  image:
+    # -- Image repository
+    # @section -- Offset Mapper deployment values
+    repository: lensesio/k2k-offset-mapper
+    tag: "2.0"
+
+    # -- Default to .Chart.AppVersion
+    # tag:
+    # -- Image pullPolicy
+    # @section -- Offset Mapper deployment values
+    pullPolicy: IfNotPresent
+    # -- imagePullSecrets: # any image pull secrets for private registries go here
+    #   - name: regcred
+
+  # -- (object) Otel configuration section.
+  # @section -- Offset Mapper OTEL configs
+  otelConfig:
+    serviceName: "k2k-offset-mapper"
+    metricsExporter: "prometheus"
+    tracesExporter: "none"
+    logsExporter: "none"
+    prometheusHost: "0.0.0.0"
+    prometheusPort: 9091
+
+  # -- (object) Override configuration for offset mapper. Overrides values from the base k2k replicationConfig.
+  # @section -- Offset Mapper config
+  overrideConfig: {}
+
+  # -- (list) Additional env variables appended to deployment
+  # @section -- Offset Mapper deployment values
+  additionalEnv: []
+    # - name: FOO
+    #   value: bar
+
+  # -- (string) Disables livenessProbe, used while debugging
+  # @section -- Offset Mapper extras
+  livenessProbe:
+    enabled: false
+
+  # -- (object) Optionally add arbitrary fields to the pod spec (e.g. priorityClassName, priority, etc)
+  # @section -- Offset Mapper extras
+  additionalPodSpec:
+
+  # -- (object) Optionally add arbitrary fields to the main container spec (e.g. tty, stdin, etc)
+  # @section -- Offset Mapper extras
+  additionalContainerSpec:
+
+  # -- (list) Additional volume mounts
+  # @section -- Offset Mapper extras
+  additionalVolumeMounts: []
+
+  # -- (list) Additional volumes
+  # @section -- Offset Mapper extras
+  additionalVolumes: []

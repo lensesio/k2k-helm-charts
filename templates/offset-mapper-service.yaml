@@ -1,0 +1,28 @@
+{{- if and .Values.offsetMapper.enabled .Values.offsetMapper.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "offsetMapper.fullname" . }}
+  labels:
+    app: {{ include "offsetMapper.fullname" . }}
+    {{- include "commonLabels" . | nindent 4 }}
+    component: "k2k-offset-mapper"
+    lenses.io/app: {{ include "offsetMapper.fullname" . }}
+    lenses.io/app.type: k2k-offset-mapper-service
+    {{- range $key, $value := .Values.offsetMapper.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+{{- if .Values.offsetMapper.service.annotations }}
+  annotations:
+    {{- toYaml .Values.offsetMapper.service.annotations | nindent 4 }}
+{{- end }}
+spec:
+  type: {{ .Values.offsetMapper.service.type | quote }}
+  selector:
+    app: {{ include "offsetMapper.fullname" . | quote }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.offsetMapper.otelConfig.prometheusPort }}
+      targetPort: {{ .Values.offsetMapper.otelConfig.prometheusPort }}
+      name: metrics
+{{- end }}

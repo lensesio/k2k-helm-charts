@@ -44,4 +44,3 @@ tests:
       - equal:
           path: metadata.name
           value: k2k
-

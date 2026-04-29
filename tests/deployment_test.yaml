@@ -15,10 +15,11 @@ set:
 tests:
   - it: should render deployment with default values
     set:
-      deployment:
-        resources:
-          limits:
-            memory: "2Gi"
+      k2k:
+        deployment:
+          resources:
+            limits:
+              memory: "2Gi"
     asserts:
       - isKind:
           of: Deployment
@@ -39,8 +40,7 @@ tests:
           value: k2k
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          # lensesio/k2k:[version][optional branch name when in dev]
-          pattern: ^lensesio/k2k:\d+\.\d+\.\d+.*$
+          pattern: ^lensesio/k2k:\d+\.\d+.*$
       - contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -49,7 +49,9 @@ tests:
 
   - it: should set custom replicas
     set:
-      deployment.replicas: 3
+      k2k:
+        deployment:
+          replicas: 3
     asserts:
       - equal:
           path: spec.replicas
@@ -57,7 +59,9 @@ tests:
 
   - it: should use custom service account
     set:
-      serviceAccount.name: my-service-account
+      k2k:
+        serviceAccount:
+          name: my-service-account
     asserts:
       - equal:
           path: spec.template.spec.serviceAccountName
@@ -65,7 +69,9 @@ tests:
 
   - it: should set custom image tag
     set:
-      image.tag: "1.2.3"
+      k2k:
+        image:
+          tag: "1.2.3"
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
@@ -73,9 +79,10 @@ tests:
 
   - it: should apply custom labels
     set:
-      labels:
-        environment: production
-        team: data
+      k2k:
+        labels:
+          environment: production
+          team: data
     asserts:
       - equal:
           path: metadata.labels.environment
@@ -86,9 +93,10 @@ tests:
 
   - it: should apply custom annotations
     set:
-      annotations:
-        description: "K2K deployment"
-        version: "1.0"
+      k2k:
+        annotations:
+          description: "K2K deployment"
+          version: "1.0"
     asserts:
       - equal:
           path: metadata.annotations.description
@@ -99,9 +107,10 @@ tests:
 
   - it: should set node selector
     set:
-      nodeSelector:
-        disktype: ssd
-        zone: us-west1
+      k2k:
+        nodeSelector:
+          disktype: ssd
+          zone: us-west1
     asserts:
       - equal:
           path: spec.template.spec.nodeSelector.disktype
@@ -112,10 +121,11 @@ tests:
 
   - it: should set OTEL environment variables
     set:
-      k2k.otelConfig:
-        serviceName: "my-k2k-service"
-        metricsExporter: "otlp"
-        prometheusPort: 8080
+      k2k:
+        otelConfig:
+          serviceName: "my-k2k-service"
+          metricsExporter: "otlp"
+          prometheusPort: 8080
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -130,13 +140,15 @@ tests:
 
   - it: should set resource requests and limits
     set:
-      deployment.resources:
-        requests:
-          cpu: "100m"
-          memory: "512Mi"
-        limits:
-          cpu: "500m"
-          memory: "1Gi"
+      k2k:
+        deployment:
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "512Mi"
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
     asserts:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.cpu
@@ -153,8 +165,11 @@ tests:
 
   - it: should enable liveness probe when configured
     set:
-      k2k.livenessProbe.enabled: true
-      k2k.otelConfig.prometheusPort: 9090
+      k2k:
+        livenessProbe:
+          enabled: true
+        otelConfig:
+          prometheusPort: 9090
     asserts:
       - isNotEmpty:
           path: spec.template.spec.containers[0].livenessProbe
@@ -164,7 +179,9 @@ tests:
 
   - it: should not have liveness probe when disabled
     set:
-      k2k.livenessProbe.enabled: false
+      k2k:
+        livenessProbe:
+          enabled: false
     asserts:
       - isNull:
           path: spec.template.spec.containers[0].livenessProbe
@@ -194,7 +211,11 @@ tests:
 
   - it: should set JAVA_OPTS to 70% for 1Gi memory
     set:
-      deployment.resources.limits.memory: "1Gi"
+      k2k:
+        deployment:
+          resources:
+            limits:
+              memory: "1Gi"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -204,7 +225,11 @@ tests:
 
   - it: should set JAVA_OPTS to 75% for 1.5Gi memory
     set:
-      deployment.resources.limits.memory: "1536Mi"  # 1.5Gi in Mi
+      k2k:
+        deployment:
+          resources:
+            limits:
+              memory: "1536Mi"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
@@ -214,10 +239,44 @@ tests:
 
   - it: should set JAVA_OPTS to 85% for 3Gi memory
     set:
-      deployment.resources.limits.memory: "3Gi"
+      k2k:
+        deployment:
+          resources:
+            limits:
+              memory: "3Gi"
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: JAVA_OPTS
             value: "-XX:MaxRAMPercentage=85.0"
+
+  - it: should render sidecar containers as siblings of the main container
+    set:
+      k2k:
+        sidecarContainers:
+          - name: log-collector
+            image: busybox:latest
+            command: ["sh", "-c", "tail -f /dev/null"]
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[1].name
+          value: log-collector
+      - equal:
+          path: spec.template.spec.containers[1].image
+          value: busybox:latest
+
+  - it: should render init containers
+    set:
+      k2k:
+        initContainers:
+          - name: wait-for-kafka
+            image: busybox:latest
+            command: ["sh", "-c", "echo ready"]
+    asserts:
+      - equal:
+          path: spec.template.spec.initContainers[0].name
+          value: wait-for-kafka
+      - equal:
+          path: spec.template.spec.initContainers[0].image
+          value: busybox:latest

@@ -32,7 +32,6 @@ tests:
           value: RELEASE-NAME-k2k
       - matchRegex:
           path: metadata.labels.chart
-          # k2k-[version][optional branch name when in development]
           pattern: ^k2k-\d+\.\d+\.\d+.*$
       - equal:
           path: metadata.labels.component
@@ -42,7 +41,6 @@ tests:
       - isNotNull:
           path: data
 
-  # Make sure we do not set anything in the K2K config
   - it: should render config with empty replication config
     set:
       k2k:

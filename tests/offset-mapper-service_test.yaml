@@ -1,10 +1,34 @@
-suite: test service
+suite: test offset mapper service
 templates:
-  - service.yaml
+  - offset-mapper-service.yaml
 tests:
+  - it: should not render when offsetMapper is disabled
+    set:
+      offsetMapper:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render with default values (disabled by default)
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render when enabled but service is disabled
+    set:
+      offsetMapper:
+        enabled: true
+        service:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
   - it: should render service when enabled
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
     asserts:
@@ -15,26 +39,18 @@ tests:
           value: v1
       - equal:
           path: metadata.name
-          value: RELEASE-NAME-k2k
+          value: RELEASE-NAME-k2k-offset-mapper
       - equal:
           path: spec.type
           value: ClusterIP
       - equal:
           path: spec.selector.app
-          value: RELEASE-NAME-k2k
-
-  - it: should not render service when disabled
-    set:
-      k2k:
-        service:
-          enabled: false
-    asserts:
-      - hasDocuments:
-          count: 0
+          value: RELEASE-NAME-k2k-offset-mapper
 
   - it: should set custom service type
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
           type: LoadBalancer
@@ -45,18 +61,19 @@ tests:
 
   - it: should configure service port from otel config
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
         otelConfig:
-          prometheusPort: 8080
+          prometheusPort: 9091
     asserts:
       - equal:
           path: spec.ports[0].port
-          value: 8080
+          value: 9091
       - equal:
           path: spec.ports[0].targetPort
-          value: 8080
+          value: 9091
       - equal:
           path: spec.ports[0].protocol
           value: TCP
@@ -66,25 +83,23 @@ tests:
 
   - it: should set service annotations
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
           annotations:
             test: nlb
-            custom: "value"
     asserts:
       - isNotNull:
           path: metadata.annotations
       - equal:
           path: metadata.annotations.test
           value: nlb
-      - equal:
-          path: metadata.annotations.custom
-          value: "value"
 
   - it: should not have annotations section when none specified
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
     asserts:
@@ -93,19 +108,20 @@ tests:
 
   - it: should set correct standard labels
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
     asserts:
       - equal:
           path: metadata.labels.app
-          value: RELEASE-NAME-k2k
+          value: RELEASE-NAME-k2k-offset-mapper
       - matchRegex:
           path: metadata.labels.chart
           pattern: ^k2k-\d+\.\d+\.\d+.*$
       - equal:
           path: metadata.labels.component
-          value: "k2k"
+          value: "k2k-offset-mapper"
       - equal:
           path: metadata.labels.heritage
           value: Helm
@@ -114,50 +130,46 @@ tests:
           value: RELEASE-NAME
       - equal:
           path: metadata.labels["lenses.io/app"]
-          value: RELEASE-NAME-k2k
+          value: RELEASE-NAME-k2k-offset-mapper
       - equal:
           path: metadata.labels["lenses.io/app.type"]
-          value: k2k-service
+          value: k2k-offset-mapper-service
 
   - it: should set custom labels
     set:
-      k2k:
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
         labels:
           environment: production
-          team: data
     asserts:
       - equal:
           path: metadata.labels.environment
           value: production
-      - equal:
-          path: metadata.labels.team
-          value: data
+
+  - it: should have distinct name from k2k service
+    set:
+      offsetMapper:
+        enabled: true
+        service:
+          enabled: true
+    asserts:
+      - notEqual:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
 
   - it: should work with fullnameOverride
     set:
-      fullnameOverride: custom-k2k-service
-      k2k:
+      fullnameOverride: custom-app
+      offsetMapper:
+        enabled: true
         service:
           enabled: true
     asserts:
       - equal:
           path: metadata.name
-          value: custom-k2k-service
+          value: custom-app-offset-mapper
       - equal:
           path: spec.selector.app
-          value: custom-k2k-service
-
-  - it: should use default prometheus port when not specified
-    set:
-      k2k:
-        service:
-          enabled: true
-    asserts:
-      - equal:
-          path: spec.ports[0].port
-          value: 9090
-      - equal:
-          path: spec.ports[0].targetPort
-          value: 9090
+          value: custom-app-offset-mapper

@@ -1,0 +1,92 @@
+k2k:
+  service:
+    enabled: true
+    type: ClusterIP
+
+  deployment:
+    replicas: 1
+    resources:
+      requests:
+        memory: 1Gi
+      limits:
+        memory: 2Gi
+
+  image:
+    repository: lensesio/k2k
+
+  otelConfig:
+    serviceName: "k2k"
+    metricsExporter: "prometheus"
+    tracesExporter: "none"
+    logsExporter: "none"
+    prometheusHost: "0.0.0.0"
+    prometheusPort: 9090
+
+  replicationConfig:
+    name: "k2k-with-offset-mapper"
+    features:
+      exactlyOnce: disabled
+      headerReplication: disabled
+      schemaMapping: disabled
+      optimizeOffsetCommitPartition: enabled
+      tracingHeaders: disabled
+      autoCreateControlTopics: enabled
+      autoCreateTopics: enabled
+      offsetMapping: enabled
+    license:
+      acceptEula: <set to true if you accept the EULA>
+      token: "<obtain the free license and copy here>"
+    source:
+      kafka:
+        common:
+          bootstrap.servers: "source-kafka:9092"
+        consumer:
+          group.id: "k2k.replicator"
+    target:
+      kafka:
+        common:
+          bootstrap.servers: "target-kafka:9092"
+    replication:
+      - source:
+          name: source
+          topic:
+            - "my-topic-1"
+            - "my-topic-2"
+      - sink:
+          name: sink
+          topic:
+            prefix: "k2k."
+          partition: source
+
+offsetMapper:
+  enabled: true
+
+  service:
+    enabled: true
+    type: ClusterIP
+
+  deployment:
+    replicas: 1
+    resources:
+      requests:
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+
+  image:
+    repository: lensesio/k2k-offset-mapping
+
+  otelConfig:
+    serviceName: "k2k-offset-mapping"
+    metricsExporter: "prometheus"
+    tracesExporter: "none"
+    logsExporter: "none"
+    prometheusHost: "0.0.0.0"
+    prometheusPort: 9091
+
+  # Optional: override specific config values from the base k2k replicationConfig
+  overrideConfig:
+    source:
+      kafka:
+        consumer:
+          group.id: "k2k.offset-mapper"

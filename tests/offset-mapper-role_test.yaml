@@ -1,0 +1,150 @@
+suite: test offset mapper role and rolebinding
+templates:
+  - offset-mapper-role.yaml
+tests:
+  - it: should not render when offsetMapper is disabled
+    set:
+      offsetMapper:
+        enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render with default values (disabled by default)
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render Role and RoleBinding when enabled
+    set:
+      offsetMapper:
+        enabled: true
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: should render Role with correct name
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 0
+    asserts:
+      - isKind:
+          of: Role
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k-offset-mapper
+
+  - it: should render RoleBinding with correct name
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 1
+    asserts:
+      - isKind:
+          of: RoleBinding
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k-offset-mapper
+
+  - it: should have distinct names from k2k role
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 0
+    asserts:
+      - notEqual:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+
+  - it: should bind to offsetMapper serviceAccount
+    set:
+      offsetMapper:
+        enabled: true
+        serviceAccount:
+          name: om-sa
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: subjects[0].name
+          value: om-sa
+      - equal:
+          path: subjects[0].kind
+          value: ServiceAccount
+
+  - it: should reference correct role in rolebinding
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: roleRef.name
+          value: RELEASE-NAME-k2k-offset-mapper
+      - equal:
+          path: roleRef.kind
+          value: Role
+
+  - it: should set correct labels on Role
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: metadata.labels.app
+          value: RELEASE-NAME-k2k-offset-mapper
+      - matchRegex:
+          path: metadata.labels.chart
+          pattern: ^k2k-\d+\.\d+\.\d+.*$
+      - equal:
+          path: metadata.labels["lenses.io/app"]
+          value: RELEASE-NAME-k2k-offset-mapper
+      - equal:
+          path: metadata.labels["lenses.io/app.type"]
+          value: k2k-offset-mapper-ns-role
+
+  - it: should set correct labels on RoleBinding
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 1
+    asserts:
+      - equal:
+          path: metadata.labels.app
+          value: RELEASE-NAME-k2k-offset-mapper
+      - equal:
+          path: metadata.labels["lenses.io/app.type"]
+          value: k2k-offset-mapper-role-binding
+
+  - it: should have configmaps permissions in role
+    set:
+      offsetMapper:
+        enabled: true
+    documentIndex: 0
+    asserts:
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources:
+              - configmaps
+            verbs:
+              - get
+              - list
+              - watch
+              - create
+              - update
+              - patch
+              - delete
+
+  - it: should work with fullnameOverride
+    set:
+      fullnameOverride: custom-app
+      offsetMapper:
+        enabled: true
+    documentIndex: 0
+    asserts:
+      - equal:
+          path: metadata.name
+          value: custom-app-offset-mapper

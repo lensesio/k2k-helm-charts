@@ -1,0 +1,109 @@
+suite: offset mapper integration tests - cross-resource validation
+templates:
+  - offset-mapper-deployment.yaml
+  - offset-mapper-service.yaml
+  - offset-mapper-configmap.yaml
+  - configmap.yaml
+set:
+  k2k:
+    replicationConfig:
+      name: "k2k-integration-test"
+      source:
+        kafka:
+          connection:
+            servers: "kafka:9092"
+      target:
+        kafka:
+          connection:
+            servers: "target:9092"
+      license:
+        acceptEula: true
+        token: "test-token"
+  offsetMapper:
+    enabled: true
+    service:
+      enabled: true
+    overrideConfig:
+      source:
+        kafka:
+          connection:
+            servers: "override-kafka:9092"
+tests:
+  - it: should have consistent naming across offset mapper resources
+    asserts:
+      - template: offset-mapper-deployment.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k-offset-mapper
+      - template: offset-mapper-service.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k-offset-mapper
+      - template: offset-mapper-configmap.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k-offset-mapper
+
+  - it: offset mapper deployment should mount k2k configmap as base config
+    asserts:
+      - template: offset-mapper-deployment.yaml
+        contains:
+          path: spec.template.spec.volumes
+          content:
+            name: base-config
+            configMap:
+              name: RELEASE-NAME-k2k
+              items:
+                - key: config.yaml
+                  path: config.yaml
+
+  - it: k2k configmap name should match what offset mapper mounts
+    asserts:
+      - template: configmap.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k
+
+  - it: offset mapper override configmap name should match volume reference
+    asserts:
+      - template: offset-mapper-configmap.yaml
+        equal:
+          path: metadata.name
+          value: RELEASE-NAME-k2k-offset-mapper
+      - template: offset-mapper-deployment.yaml
+        contains:
+          path: spec.template.spec.volumes
+          content:
+            name: override-config
+            configMap:
+              name: RELEASE-NAME-k2k-offset-mapper
+              items:
+                - key: override.yaml
+                  path: override.yaml
+
+  - it: should work with fullnameOverride across all resources
+    set:
+      fullnameOverride: custom-k2k
+      offsetMapper:
+        enabled: true
+        service:
+          enabled: true
+        overrideConfig:
+          key: value
+    asserts:
+      - template: offset-mapper-deployment.yaml
+        equal:
+          path: metadata.name
+          value: custom-k2k-offset-mapper
+      - template: offset-mapper-service.yaml
+        equal:
+          path: metadata.name
+          value: custom-k2k-offset-mapper
+      - template: offset-mapper-configmap.yaml
+        equal:
+          path: metadata.name
+          value: custom-k2k-offset-mapper
+      - template: configmap.yaml
+        equal:
+          path: metadata.name
+          value: custom-k2k

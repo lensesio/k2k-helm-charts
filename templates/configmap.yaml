@@ -4,10 +4,8 @@ metadata:
   name: {{ include "fullname" . | quote }}
   labels:
     app: {{ include "fullname" . }}
-    chart: {{ printf "%s-%s" .Chart.Name .Chart.Version }}
+    {{- include "commonLabels" . | nindent 4 }}
     component: "lenses-kafka2kafka"
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
     lenses.io/app: {{ include "fullname" . }}
     lenses.io/app.type: k2k-configmap
 data:

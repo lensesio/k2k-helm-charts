@@ -1,54 +1,43 @@
-# @section -- Lenses K2K deployment service values
-service:
-  # -- (bool) Deciding factor whether Lenses K2K service will be created and which type
-  # @section -- Lenses K2K deployment service values
-  enabled: true
-
-  # -- (string) Type of service to be created.
-  # @section -- Lenses K2K deployment service values
-  type: ClusterIP
-
-deployment:
-  replicas: 1
-  #  Resource management
-  # -- Pod resources
-  # @section -- Custom deployment values
-  resources:
-    requests:
-    #   cpu: 1
-      memory: 500Mi
-    limits:
-    #   cpu: 2
-      memory: 1Gi
-
-image:
-  repository: lensesio/k2k
-
-# Use it in conjuction with lenses.additionalVolumes
-additionalVolumeMounts:
-  - name: external-kafka-ca-cert
-    mountPath: "/etc/cacert/caroot.pem"
-    subPath: "caroot.pem"
-  - name: external-kafka-certs-source-all
-    mountPath: "/etc/clientcert/source.pem"
-    subPath: "source.pem"
-  - name: external-kafka-certs-target-all
-    mountPath: "/etc/clientcert/target.pem"
-    subPath: "target.pem"
-
-additionalVolumes:
-  - name: external-kafka-ca-cert
-    secret:
-      secretName: external-kafka-ca-cert
-  - name: external-kafka-certs-all
-    secret:
-      secretName: external-kafka-certs-all
-  - name: external-kafka-certs-source-all
-    secret:
-      secretName: external-kafka-certs-taget-all
-
 k2k:
-  # Property to create Env vars based on *precreated* secrets
+  service:
+    enabled: true
+    type: ClusterIP
+
+  deployment:
+    replicas: 1
+    resources:
+      requests:
+      #   cpu: 1
+        memory: 500Mi
+      limits:
+      #   cpu: 2
+        memory: 1Gi
+
+  image:
+    repository: lensesio/k2k
+
+  additionalVolumeMounts:
+    - name: external-kafka-ca-cert
+      mountPath: "/etc/cacert/caroot.pem"
+      subPath: "caroot.pem"
+    - name: external-kafka-certs-source-all
+      mountPath: "/etc/clientcert/source.pem"
+      subPath: "source.pem"
+    - name: external-kafka-certs-target-all
+      mountPath: "/etc/clientcert/target.pem"
+      subPath: "target.pem"
+
+  additionalVolumes:
+    - name: external-kafka-ca-cert
+      secret:
+        secretName: external-kafka-ca-cert
+    - name: external-kafka-certs-all
+      secret:
+        secretName: external-kafka-certs-all
+    - name: external-kafka-certs-source-all
+      secret:
+        secretName: external-kafka-certs-taget-all
+
   additionalEnv:
     - name: SOURCE_SSL_KEY_PASSWORD
       valueFrom:
@@ -68,6 +57,7 @@ k2k:
     logsExporter: "none"
     prometheusHost: "0.0.0.0"
 #    prometheusPort: "9090"
+
   replicationConfig:
     name: "k2k-demo-env"
     features:
@@ -91,8 +81,8 @@ k2k:
           security.protocol: "SSL"
           ssl.truststore.type: "PEM"
           ssl.keystore.type: "PEM"
-          ssl.truststore.location: "/etc/cacert/caroot.pem"  # mount your certificate, check additionalVolumes, line 36
-          ssl.keystore.location: "/etc/clientcert/source.pem"   # mount your certificate, check additionalVolumes, line 36
+          ssl.truststore.location: "/etc/cacert/caroot.pem"
+          ssl.keystore.location: "/etc/clientcert/source.pem"
           ssl.key.password: ${env:string:SOURCE_SSL_KEY_PASSWORD}
         consumer:
           group.id: "k2k.eot"
@@ -102,16 +92,16 @@ k2k:
           bootstrap.servers: "localhost:9093"
           sasl.jaas.config: "org.apache.kafka.common.security.plain.PlainLoginModule required username=userName password=pwd;"
           ssl.truststore.type: "PEM"
-          ssl.truststore.location: "/etc/cacert/caroot.pem"   # mount your certificate, check additionalVolumes, line 36
+          ssl.truststore.location: "/etc/cacert/caroot.pem"
           ssl.keystore.type: "PEM"
-          ssl.keystore.location: "/etc/clientcert/taget.pem"   # mount your certificate, check additionalVolumes, line 36
+          ssl.keystore.location: "/etc/clientcert/taget.pem"
           ssl.key.password: ${env:string:TARGET_SSL_KEY_PASSWORD}
           security.protocol: "SSL"
       registry:
         config:
           schema.registry.url: "localhost:8081"
           schema.registry.ssl.truststore.type: "PEM"
-          schema.registry.ssl.truststore.location: "/etc/cacert/caroot.pem"    # mount your certificate,m check additionalVolumes, line 36
+          schema.registry.ssl.truststore.location: "/etc/cacert/caroot.pem"
     replication:
       - source:
           name: source

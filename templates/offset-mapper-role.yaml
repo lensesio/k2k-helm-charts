@@ -1,13 +1,14 @@
+{{- if .Values.offsetMapper.enabled }}
 kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ include "fullname" . }}
+  name: {{ include "offsetMapper.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ include "fullname" . }}
+    app: {{ include "offsetMapper.fullname" . }}
     {{- include "commonLabels" . | nindent 4 }}
-    lenses.io/app: {{ include "fullname" . }}
-    lenses.io/app.type: k2k-ns-role
+    lenses.io/app: {{ include "offsetMapper.fullname" . }}
+    lenses.io/app.type: k2k-offset-mapper-ns-role
 rules:
 - apiGroups: [""]
   resources:
@@ -86,18 +87,19 @@ rules:
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ include "fullname" . }}
+  name: {{ include "offsetMapper.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ include "fullname" . }}
+    app: {{ include "offsetMapper.fullname" . }}
     {{- include "commonLabels" . | nindent 4 }}
-    lenses.io/app: {{ include "fullname" . }}
-    lenses.io/app.type: k2k-role-binding
+    lenses.io/app: {{ include "offsetMapper.fullname" . }}
+    lenses.io/app.type: k2k-offset-mapper-role-binding
 subjects:
   - kind: ServiceAccount
     namespace: {{ .Release.Namespace }}
-    name:  {{ .Values.k2k.serviceAccount.name }}
+    name: {{ .Values.offsetMapper.serviceAccount.name }}
 roleRef:
   kind: Role
-  name: {{ include "fullname" . }}
+  name: {{ include "offsetMapper.fullname" . }}
   apiGroup: rbac.authorization.k8s.io
+{{- end }}
