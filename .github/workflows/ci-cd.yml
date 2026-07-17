@@ -389,7 +389,42 @@ jobs:
           .
         echo "Docker image built and pushed: ${DOCKER_IMAGE}"
 
-  # # Job 6: Deploy to Kubernetes via ArgoCD
+  # Job 6: Deploy to Cloud Run (OPS-2624)
+  # Deploys the snapshot image to the helm-repo service serving
+  # helm.repo.lenses.io / helm-origin.repo.lenses.io. Runs alongside the VM
+  # scp deploy (Job 4) until the legacy VM is decommissioned.
+  deploy-to-cloud-run:
+    name: Deploy to Cloud Run
+    needs:
+      - test-and-package
+      - build-docker-image
+    runs-on: ubuntu-latest
+    env:
+      GCP_PROJECT_CI: ${{ vars.GCP_PROJECT_CI }}
+    permissions:
+      id-token: write # for workload federation
+      contents: read
+    if: |
+      github.event_name == 'push' &&
+      needs.test-and-package.outputs.BUILD_MODE == 'release'
+
+    steps:
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        project_id: lensesio-production-public
+        workload_identity_provider: projects/835207595494/locations/global/workloadIdentityPools/gh-lensesio-dev/providers/github
+        service_account: github-actions@lensesio-production-public.iam.gserviceaccount.com
+
+    - name: Deploy snapshot image to helm-repo
+      uses: google-github-actions/deploy-cloudrun@v2
+      with:
+        project_id: lensesio-production-public
+        region: europe-west1
+        service: helm-repo
+        image: eu.gcr.io/${{ env.GCP_PROJECT_CI }}/lenses-helm-chart-repo:${{ github.sha }}
+
+  # # Job 7: Deploy to Kubernetes via ArgoCD
   # # TODO
   # deploy-to-kubernetes:
   #   name: Deploy to Kubernetes
