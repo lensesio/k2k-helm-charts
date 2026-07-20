@@ -314,6 +314,13 @@ jobs:
 
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        # Pin gcloud to 566.0.0 (released 2026-04-28) — the version in use on the last run
+        # this job is known to have succeeded (2026-04-29). Newer gcloud regressed
+        # `compute scp --tunnel-through-iap`, which stalls indefinitely on transfers larger
+        # than ~15KB (reported upstream, root cause unfixed). Unpin once the legacy VM is
+        # decommissioned (OPS-2624) or the upstream regression is resolved.
+        version: '566.0.0'
 
     - name: Deploy to production website (best-effort)
       # Best-effort push to the legacy VM (OPS-2624). Each remote call is bounded with
