@@ -264,6 +264,11 @@ jobs:
       - test-and-package
       - build-static-site
     runs-on: ubuntu-latest
+    # The legacy VM (ans-ci-backend-eu-01) is being retired (OPS-2624) and is now served
+    # in parallel by Cloud Run. A stalled IAP scp must not block or fail the release, so
+    # cap the job (it normally takes seconds) and treat its failure as non-fatal.
+    continue-on-error: true
+    timeout-minutes: 10
     env:
       GCP_PROJECT_CI: ${{ vars.GCP_PROJECT_CI }}
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -312,9 +317,11 @@ jobs:
       run: |
         # Remote path, we do not clean it because we only add and update files
         REMOTE_PATH="/mnt/persistent/helm.repo.lenses.io"
-        # SSH and SCP base commands
+        # SSH and SCP base commands.
+        # --scp-flag=-O forces scp's legacy transfer protocol; newer scp defaults to SFTP,
+        # which the legacy VM's old sshd handles poorly over the IAP tunnel.
         SSH_COMMAND="gcloud compute ssh --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa ${GCP_SERVER_SSH}"
-        SCP_COMMAND="gcloud compute scp --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa"
+        SCP_COMMAND="gcloud compute scp --scp-flag=-O --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa"
         # Create remote directory
         $SSH_COMMAND --command="mkdir -p ${REMOTE_PATH}"
         # Copy files
