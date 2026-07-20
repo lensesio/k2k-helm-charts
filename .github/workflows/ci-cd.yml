@@ -265,10 +265,12 @@ jobs:
       - build-static-site
     runs-on: ubuntu-latest
     # The legacy VM (ans-ci-backend-eu-01) is being retired (OPS-2624) and is now served
-    # in parallel by Cloud Run. A stalled IAP scp must not block or fail the release, so
-    # cap the job (it normally takes seconds) and treat its failure as non-fatal.
+    # in parallel by Cloud Run. This push is a best-effort fallback: the "Deploy" step
+    # bounds each remote call with `timeout` and always exits 0, so a stalled IAP scp
+    # never reddens the release. continue-on-error + this generous job timeout are only a
+    # catastrophic backstop (the step-level timeouts fire well before it).
     continue-on-error: true
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       GCP_PROJECT_CI: ${{ vars.GCP_PROJECT_CI }}
       GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
@@ -313,23 +315,41 @@ jobs:
     - name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v2'
 
-    - name: Deploy to production website
+    - name: Deploy to production website (best-effort)
+      # Best-effort push to the legacy VM (OPS-2624). Each remote call is bounded with
+      # `timeout` and the step always exits 0, so an IAP scp stall degrades to a skipped
+      # fallback (with a warning) rather than a cancelled/failed release. The charts are
+      # already served by Cloud Run regardless.
       run: |
+        set +e
         # Remote path, we do not clean it because we only add and update files
         REMOTE_PATH="/mnt/persistent/helm.repo.lenses.io"
         # SSH and SCP base commands.
-        # --scp-flag=-O forces scp's legacy transfer protocol; newer scp defaults to SFTP,
-        # which the legacy VM's old sshd handles poorly over the IAP tunnel.
+        # --scp-flag=-O forces scp's legacy transfer protocol (kept as a harmless
+        # best-effort; on its own it did not resolve the IAP tunnel stall — see OPS-2624).
         SSH_COMMAND="gcloud compute ssh --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa ${GCP_SERVER_SSH}"
         SCP_COMMAND="gcloud compute scp --scp-flag=-O --zone ${GCP_SERVER_ZONE} --project ${GCP_PROJECT_SERVER} --tunnel-through-iap --ssh-key-file=~/.ssh/id_rsa"
-        # Create remote directory
-        $SSH_COMMAND --command="mkdir -p ${REMOTE_PATH}"
-        # Copy files
+
         tar xzf charts.tgz
-        cd charts
-        $SCP_COMMAND --recurse . ${GCP_SERVER_SSH}:${REMOTE_PATH}
+
+        ok=1
+        # Create remote directory
+        timeout -k 30 120 $SSH_COMMAND --command="mkdir -p ${REMOTE_PATH}" || ok=0
+        # Copy files
+        if [ "$ok" = 1 ]; then
+          ( cd charts && timeout -k 30 300 $SCP_COMMAND --recurse . ${GCP_SERVER_SSH}:${REMOTE_PATH} ) || ok=0
+        fi
         # List deployed files
-        $SSH_COMMAND --command="ls -lsa ${REMOTE_PATH}"
+        if [ "$ok" = 1 ]; then
+          timeout -k 30 60 $SSH_COMMAND --command="ls -lsa ${REMOTE_PATH}" || ok=0
+        fi
+
+        if [ "$ok" = 1 ]; then
+          echo "Legacy VM publish succeeded."
+        else
+          echo "::warning title=Legacy VM publish skipped::Best-effort push to ${GCP_SERVER_SSH} failed or timed out (IAP scp stall, OPS-2624). Charts are already served by Cloud Run; not failing the release."
+        fi
+        exit 0
 
   # Job 5: Build Docker Image
   build-docker-image:
