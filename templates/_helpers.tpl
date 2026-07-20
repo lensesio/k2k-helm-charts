@@ -32,35 +32,60 @@ is never silently stripped, which would cause name collisions with the k2k resou
 {{- end -}}
 
 {{/*
-K2K image reference.
-If tag is set explicitly, use repository:tag.
-If repository already contains a colon (embedded tag), use it as-is.
-Otherwise fall back to repository:appVersion.
+Build a fully-qualified image reference from an image map.
+Usage: {{ include "k2k.imageRef" (dict "image" .Values.k2k.image "context" .) }}
+
+Registry handling (backwards compatible):
+  image.registry is prepended ONLY when image.repository does not already carry
+  its own registry host. A "host" is the first path segment when it contains a
+  "." or ":" (a domain or host:port) or equals "localhost". This keeps existing
+  values that pin a full path (e.g. an air-gapped mirror such as
+  "myregistry.internal/lensesio/k2k") working unchanged, and makes an already
+  fully-qualified repository idempotent.
+
+  registry defaults to cr.lenses.io even when left empty, so the default pull
+  location is sticky. To use a different registry (e.g. Docker Hub) set it
+  explicitly (registry: docker.io) or include the host in repository.
+
+Tag handling (unchanged):
+  If image.tag is set, use repository:tag.
+  Else if the repository's last segment already contains a colon (embedded tag),
+  use it as-is.
+  Otherwise fall back to repository:appVersion.
 */}}
-{{- define "k2k.image" -}}
-{{- if .Values.k2k.image.tag -}}
-{{- printf "%s:%s" .Values.k2k.image.repository .Values.k2k.image.tag -}}
-{{- else if contains ":" .Values.k2k.image.repository -}}
-{{- .Values.k2k.image.repository -}}
+{{- define "k2k.imageRef" -}}
+{{- $image := .image -}}
+{{- $registry := $image.registry | default "cr.lenses.io" -}}
+{{- $repository := $image.repository -}}
+{{- $segments := splitList "/" $repository -}}
+{{- $firstSegment := first $segments -}}
+{{- $lastSegment := last $segments -}}
+{{- $hasHost := or (contains "." $firstSegment) (contains ":" $firstSegment) (eq $firstSegment "localhost") -}}
+{{- $fullRepo := $repository -}}
+{{- if and $registry (not $hasHost) -}}
+{{- $fullRepo = printf "%s/%s" $registry $repository -}}
+{{- end -}}
+{{- if $image.tag -}}
+{{- printf "%s:%s" $fullRepo $image.tag -}}
+{{- else if contains ":" $lastSegment -}}
+{{- $fullRepo -}}
 {{- else -}}
-{{- printf "%s:%s" .Values.k2k.image.repository .Chart.AppVersion -}}
+{{- printf "%s:%s" $fullRepo .context.Chart.AppVersion -}}
 {{- end -}}
 {{- end -}}
 
 {{/*
+K2K image reference.
+*/}}
+{{- define "k2k.image" -}}
+{{- include "k2k.imageRef" (dict "image" .Values.k2k.image "context" .) -}}
+{{- end -}}
+
+{{/*
 Offset mapper image reference.
-If tag is set explicitly, use repository:tag.
-If repository already contains a colon (embedded tag), use it as-is.
-Otherwise fall back to repository:appVersion.
 */}}
 {{- define "offsetMapper.image" -}}
-{{- if .Values.offsetMapper.image.tag -}}
-{{- printf "%s:%s" .Values.offsetMapper.image.repository .Values.offsetMapper.image.tag -}}
-{{- else if contains ":" .Values.offsetMapper.image.repository -}}
-{{- .Values.offsetMapper.image.repository -}}
-{{- else -}}
-{{- printf "%s:%s" .Values.offsetMapper.image.repository .Chart.AppVersion -}}
-{{- end -}}
+{{- include "k2k.imageRef" (dict "image" .Values.offsetMapper.image "context" .) -}}
 {{- end -}}
 
 {{/*

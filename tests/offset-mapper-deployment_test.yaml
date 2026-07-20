@@ -54,7 +54,7 @@ tests:
     asserts:
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: ^lensesio/k2k-offset-mapper:\d+\.\d+.*$
+          pattern: ^cr\.lenses\.io/lensesio/k2k-offset-mapper:\d+\.\d+.*$
 
   - it: should use correct container name
     set:
@@ -74,7 +74,19 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: lensesio/k2k-offset-mapper:2.0.0
+          value: cr.lenses.io/lensesio/k2k-offset-mapper:2.0.0
+
+  - it: should not prepend the registry when repository already has a host
+    set:
+      offsetMapper:
+        enabled: true
+        image:
+          repository: myregistry.internal/lensesio/k2k-offset-mapper
+          tag: "2.0.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: myregistry.internal/lensesio/k2k-offset-mapper:2.0.0
 
   - it: should have correct command without override config
     set:

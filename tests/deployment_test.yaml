@@ -40,7 +40,7 @@ tests:
           value: k2k
       - matchRegex:
           path: spec.template.spec.containers[0].image
-          pattern: ^lensesio/k2k:\d+\.\d+.*$
+          pattern: ^cr\.lenses\.io/lensesio/k2k:\d+\.\d+.*$
       - contains:
           path: spec.template.spec.containers[0].env
           content:
@@ -75,7 +75,63 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: lensesio/k2k:1.2.3
+          value: cr.lenses.io/lensesio/k2k:1.2.3
+
+  - it: should prepend the default registry to the repository
+    set:
+      k2k:
+        image:
+          tag: "2.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: cr.lenses.io/lensesio/k2k:2.0
+
+  - it: should use a custom registry when overridden
+    set:
+      k2k:
+        image:
+          registry: my.registry.example
+          tag: "2.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: my.registry.example/lensesio/k2k:2.0
+
+  - it: should not prepend the registry when repository already has a host
+    set:
+      k2k:
+        image:
+          repository: myregistry.internal/lensesio/k2k
+          tag: "2.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: myregistry.internal/lensesio/k2k:2.0
+
+  - it: should keep cr.lenses.io as the sticky default when registry is emptied
+    set:
+      k2k:
+        image:
+          registry: ""
+          repository: lensesio/k2k
+          tag: "2.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: cr.lenses.io/lensesio/k2k:2.0
+
+  - it: should use Docker Hub only when registry is set explicitly
+    set:
+      k2k:
+        image:
+          registry: docker.io
+          repository: lensesio/k2k
+          tag: "2.0"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: docker.io/lensesio/k2k:2.0
 
   - it: should apply custom labels
     set:

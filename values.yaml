@@ -80,6 +80,11 @@ k2k:
   # -- Image map
   # @section -- K2K deployment values
   image:
+    # -- Image registry, prepended to `repository` unless `repository` already
+    # includes a registry host. Defaults to cr.lenses.io even if left empty; to
+    # use another registry (e.g. `docker.io`) set it explicitly.
+    # @section -- K2K deployment values
+    registry: cr.lenses.io
     # -- Image repository
     # @section -- K2K deployment values
     repository: lensesio/k2k
@@ -279,6 +284,11 @@ offsetMapper:
   # -- Image map
   # @section -- Offset Mapper deployment values
   image:
+    # -- Image registry, prepended to `repository` unless `repository` already
+    # includes a registry host. Defaults to cr.lenses.io even if left empty; to
+    # use another registry (e.g. `docker.io`) set it explicitly.
+    # @section -- Offset Mapper deployment values
+    registry: cr.lenses.io
     # -- Image repository
     # @section -- Offset Mapper deployment values
     repository: lensesio/k2k-offset-mapper
