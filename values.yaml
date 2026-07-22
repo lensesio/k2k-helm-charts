@@ -85,7 +85,8 @@ k2k:
     # use another registry (e.g. `docker.io`) set it explicitly.
     # @section -- K2K deployment values
     registry: cr.lenses.io
-    # -- Image repository
+    # -- Image repository. A GraalVM native image is also available as
+    # `lensesio/k2k-native`.
     # @section -- K2K deployment values
     repository: lensesio/k2k
     tag: "2.0"
@@ -289,7 +290,8 @@ offsetMapper:
     # use another registry (e.g. `docker.io`) set it explicitly.
     # @section -- Offset Mapper deployment values
     registry: cr.lenses.io
-    # -- Image repository
+    # -- Image repository. A GraalVM native image is also available as
+    # `lensesio/k2k-offset-mapper-native`.
     # @section -- Offset Mapper deployment values
     repository: lensesio/k2k-offset-mapper
     tag: "2.0"
