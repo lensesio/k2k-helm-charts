@@ -90,6 +90,30 @@ jobs:
         helm package -d build .
         ls -la build/
 
+    - name: Verify chart package contents
+      # .helmignore is a denylist and cannot be inverted into an allow-list, so new
+      # root-level files leak silently. This is the allow-list; it runs before upload.
+      run: |
+        ALLOWED='Chart.yaml|Chart.lock|values.yaml|values.schema.json|README.md|LICENSE|charts|templates|examples'
+        rc=0
+        for chart in build/*.tgz; do
+          UNEXPECTED=$(tar tzf "${chart}" \
+            | sed -E 's|^[^/]+/||' \
+            | grep -v '^$' \
+            | cut -d/ -f1 \
+            | sort -u \
+            | grep -Ev "^(${ALLOWED})$" || true)
+          if [ -n "${UNEXPECTED}" ]; then
+            echo "::error title=Unexpected files in chart package::${chart} contains: $(echo ${UNEXPECTED} | tr '\n' ' ')"
+            echo "Exclude them in .helmignore, or add them to ALLOWED in this step if they belong in the chart."
+            tar tzf "${chart}"
+            rc=1
+          else
+            echo "${chart}: contents OK"
+          fi
+        done
+        exit $rc
+
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()

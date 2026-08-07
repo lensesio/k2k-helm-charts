@@ -1,1 +1,36 @@
-/tests
+# Excluded from `helm package`. Chart.yaml is at the repo root, so anything not listed
+# here ships. The "Verify chart package contents" CI step catches what this misses.
+
+# Version control
+.git/
+.gitignore
+.gitattributes
+.hg/
+.hgignore
+.bzr/
+.bzrignore
+.svn/
+
+# CI/CD, tooling, build output
+.ci/
+.github/
+.claude/
+build/
+junit/
+tests/
+CICD.md
+
+# helm-docs source; the rendered README.md ships
+README.md.gotmpl
+
+.helmignore
+
+# Editor / OS cruft
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+.idea/
+.vscode/
+.DS_Store
