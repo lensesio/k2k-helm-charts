@@ -89,7 +89,7 @@ k2k:
     # `lensesio/k2k-native`.
     # @section -- K2K deployment values
     repository: lensesio/k2k
-    tag: "2.0"
+    tag: "2.1"
 
     # -- Default to .Chart.AppVersion
     # tag:
@@ -294,7 +294,7 @@ offsetMapper:
     # `lensesio/k2k-offset-mapper-native`.
     # @section -- Offset Mapper deployment values
     repository: lensesio/k2k-offset-mapper
-    tag: "2.0"
+    tag: "2.1"
 
     # -- Default to .Chart.AppVersion
     # tag:

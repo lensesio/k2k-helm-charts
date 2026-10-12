@@ -1,6 +1,6 @@
 # k2k
 
-![Version: 2.0.3](https://img.shields.io/badge/Version-2.0.3-informational?style=flat-square) ![AppVersion: 2.0.1](https://img.shields.io/badge/AppVersion-2.0.1-informational?style=flat-square)
+![Version: 2.1.0](https://img.shields.io/badge/Version-2.1.0-informational?style=flat-square) ![AppVersion: 2.1.0](https://img.shields.io/badge/AppVersion-2.1.0-informational?style=flat-square)
 
 A Helm chart for Lenses K2K Replicator
 
@@ -65,7 +65,7 @@ The command deploys Lenses K2K on the Kubernetes cluster in the example configur
 | k2k.affinity | dict | `{}` | Deployment affinity rules |
 | k2k.annotations | dict | `{}` | Custom deployment annotations |
 | k2k.deployment | object | `{"replicas":1,"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"1Gi"}}}` | Pod resources |
-| k2k.image | object | `{"pullPolicy":"IfNotPresent","registry":"cr.lenses.io","repository":"lensesio/k2k","tag":"2.0"}` | Image map |
+| k2k.image | object | `{"pullPolicy":"IfNotPresent","registry":"cr.lenses.io","repository":"lensesio/k2k","tag":"2.1"}` | Image map |
 | k2k.image.pullPolicy | string | `"IfNotPresent"` | Image pullPolicy |
 | k2k.image.registry | string | `"cr.lenses.io"` | Image registry, prepended to `repository` unless `repository` already includes a registry host. Defaults to cr.lenses.io even if left empty; to use another registry (e.g. `docker.io`) set it explicitly. |
 | k2k.image.repository | string | `"lensesio/k2k"` | Image repository. A GraalVM native image is also available as `lensesio/k2k-native`. |
@@ -123,7 +123,7 @@ The command deploys Lenses K2K on the Kubernetes cluster in the example configur
 | offsetMapper.affinity | dict | `{}` | Deployment affinity rules |
 | offsetMapper.annotations | dict | `{}` | Custom deployment annotations |
 | offsetMapper.deployment | object | `{"replicas":1,"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"1Gi"}}}` | Pod resources |
-| offsetMapper.image | object | `{"pullPolicy":"IfNotPresent","registry":"cr.lenses.io","repository":"lensesio/k2k-offset-mapper","tag":"2.0"}` | Image map |
+| offsetMapper.image | object | `{"pullPolicy":"IfNotPresent","registry":"cr.lenses.io","repository":"lensesio/k2k-offset-mapper","tag":"2.1"}` | Image map |
 | offsetMapper.image.pullPolicy | string | `"IfNotPresent"` | Image pullPolicy |
 | offsetMapper.image.registry | string | `"cr.lenses.io"` | Image registry, prepended to `repository` unless `repository` already includes a registry host. Defaults to cr.lenses.io even if left empty; to use another registry (e.g. `docker.io`) set it explicitly. |
 | offsetMapper.image.repository | string | `"lensesio/k2k-offset-mapper"` | Image repository. A GraalVM native image is also available as `lensesio/k2k-offset-mapper-native`. |
